@@ -141,7 +141,6 @@ def read_file_to_data(filename):
 def read_data_and_plot(filename):
     # Read the data and seperate it into x and y values
 
-    # TODO Open the file and read the data
     # data = read_file_to_data(filename)
     # data_x, data_y = data[0], data[1]
     

@@ -118,8 +118,6 @@ def fit_data_to_expected(compensator_angles, measured_intensities, intensity_unc
 
     param_err = np.sqrt(np.diag(param_convolution ))
 
-    print(param_err)
-
     print("angle: {:.4G} +- {:.4G}\nn_gold: {:.4G} +- {:.4G}\nk_gold: {:.4G} +- {:.4G}\nd: {:.4G} +- {:.4G}\nwavelength: {:.4G} +- {:.4G}".format(optimal_param[0] * 180 / np.pi, param_err[0] * 180 / np.pi, optimal_param[1], param_err[1], optimal_param[2], param_err[2], optimal_param[3], param_err[3], optimal_param[4], param_err[4]))
 
     return optimal_param, param_err

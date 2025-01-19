@@ -17,6 +17,9 @@ def get_rotated_quarter_wave_plate(theta):
 
     return np.exp(-1j * np.pi / 4) * np.matrix([[cos_theta ** 2 + 1j * sin_theta ** 2, combined_sin_cos], [combined_sin_cos, sin_theta ** 2 + 1j * cos_theta ** 2]])
 
+def get_freespace_matrix(d):
+    return np.matrix([[1, d], [0, 1]])
+
 # Uses a more in-depth version of Snell's law to describe how the parallel and perpendicular components of the electric field are reflected differently
 # returns an array with the parallel and perpendicular components of the reflected light [0-1]
 # also returns the refracted angle, at which light has passed through the boundary
@@ -57,13 +60,17 @@ def get_thin_film_matrix(theta_incoming, n_air, n_gold, n_glass, k_air, k_gold, 
 
     ratio = T_total[0] / T_total[1]
     
+    # TODO get distance and wavelength involved in a better way
     # Psi is the angle at which the fast axis acts (the semi-major axis of the ellipse)
-    psi = np.pi - np.atan2(np.abs(T_total[0]), np.abs(T_total[1]))
+    psi = np.modf(d / wavelength)[0] * 2 * (np.pi - np.atan2(np.abs(T_total[0]), np.abs(T_total[1])))
     # Delta is the difference between the phase offset given, by this traversal, to the parallel and perpendicular components
-    delta = np.pi - np.atan2(np.imag(ratio), np.real(ratio))
+    delta = np.modf(d / wavelength)[0] * 2 * (np.pi - np.atan2(np.imag(ratio), np.real(ratio)))
 
     # Describe this phase offset and the magnitude in a Jones' matrix
     return np.matrix([[np.sin(psi) * np.exp(1j * delta), 0], [0, np.cos(psi)]])
+
+def get_sample_matrix(sample_angle_of_incidence, n_air, n_gold, n_glass, k_air, k_gold, k_glass, d, wavelength):
+    return get_thin_film_matrix(sample_angle_of_incidence, n_air, n_gold, n_glass, k_air, k_gold, k_glass, d, wavelength)
 
 # The default values for known parameters
 def get_default_refractive_index_param():
@@ -81,7 +88,7 @@ def get_expected_intensities(compensator_angles, sample_angle_of_incidence, n_go
     (n_air, k_air), (n_glass, k_glass) = get_default_refractive_index_param()
     original_field_strength = np.array([1 / np.sqrt(2), 1 / np.sqrt(2)]) # Normalised 45 degree, linearly-polarised light
 
-    sample_mat = get_thin_film_matrix(sample_angle_of_incidence, n_air, n_gold, n_glass, k_air, k_gold, k_glass, d, wavelength)
+    sample_mat = get_sample_matrix(sample_angle_of_incidence, n_air, n_gold, n_glass, k_air, k_gold, k_glass, d, wavelength)
 
     polariser_angle = np.pi / 4 # 45 Degree Angle
     polarisation_mat = get_rotated_linear_polariser_matrix(polariser_angle)
@@ -104,7 +111,7 @@ def fit_data_to_expected(compensator_angles, measured_intensities, intensity_unc
     wavelength_guess = 630e-9
 
     # Bounds for each guess
-    n_angle_bounds = [0, np.pi/2]
+    n_angle_bounds = [-np.pi/2, np.pi/2]
     n_gold_bounds = [0, 10]
     k_gold_bounds = [0, 10]
     d_bounds = [0.1e-9, 100e-9]
@@ -114,7 +121,7 @@ def fit_data_to_expected(compensator_angles, measured_intensities, intensity_unc
     bounds = np.array([n_angle_bounds, n_gold_bounds, k_gold_bounds, d_bounds, wavelength_bounds])
 
     # Fit the data using these initial parameters
-    optimal_param, param_convolution = curve_fit(get_expected_intensities, compensator_angles, measured_intensities, p0=[n_angle_guess, n_gold_guess, k_gold_guess, d_guess, wavelength_guess], bounds=(bounds[::, 0], bounds[::, 1]), sigma=intensity_uncertainties, absolute_sigma=True)
+    optimal_param, param_convolution = curve_fit(get_expected_intensities, compensator_angles, measured_intensities, p0=[n_angle_guess, n_gold_guess, k_gold_guess, d_guess, wavelength_guess], bounds=(bounds[::, 0], bounds[::, 1]), sigma=intensity_uncertainties, absolute_sigma=True, method="trf")
 
     param_err = np.sqrt(np.diag(param_convolution ))
 
@@ -141,20 +148,8 @@ def read_file_to_data(filename):
         assert len(angles) == len(intensities), "Data arrays are of different length:\n\tAngles: {}\tIntensities: {}".format(len(angles), len(intensities))
 
     return (angles, intensities)
-    
-# Read the data from a file, then plot this data, alongside the expected intensities from the optimal fitting of the data
-def read_data_and_plot(filename):
-    # Read the data and seperate it into x and y values
-    data = read_file_to_data(filename)
-    data_x, data_y = data[0], data[1]
-    
-    # brewsters_angle = get_default_brewsters_angle()
-    # data = np.zeros(200)
-    # data_x = np.linspace(-np.pi, np.pi, num=len(data), endpoint = True)
-    # data_y = get_expected_intensities(data_x, brewsters_angle, 0.18, 3.4432, 50e-9, 632e-9)
 
-    # Format the figure and plot
-
+def format_plot(y_max):
     # Set the font size for the title and axes labels
     plt.rc('axes', titlesize=20, labelsize=20)
     plt.rc('legend', fontsize=15)
@@ -174,7 +169,21 @@ def read_data_and_plot(filename):
     plt.grid(visible = True, axis="x", which = "minor", ls="-.")
 
     # Remove the margins around the data
-    plt.margins(x=0, y=max(data_y) / 50, tight=True)
+    plt.margins(x=0, y=y_max / 50, tight=True)
+
+# Read the data from a file, then plot this data, alongside the expected intensities from the optimal fitting of the data
+def read_data_and_plot(filename):
+    # Read the data and seperate it into x and y values
+    # data = read_file_to_data(filename)
+    # data_x, data_y = data[0], data[1]
+    
+    brewsters_angle = get_default_brewsters_angle()
+    data = np.zeros(200)
+    data_x = np.linspace(-np.pi, np.pi, num=len(data), endpoint = True)
+    data_y = get_expected_intensities(data_x, brewsters_angle, 0.18, 3.4432, 50e-9, 632e-9)
+
+    # Format the figure and plot
+    format_plot(max(data_y))
 
     # Set the title and axes labels for this plot
     plt.title(r"Light Intensity $\left(\frac{I_{Final}}{I_{Initial}}\right)$ vs Compensator Angle")
@@ -201,4 +210,45 @@ def read_data_and_plot(filename):
     plt.tight_layout()
     plt.show()
 
+def plot_range_of_wavelengths():
+    wavelengths = np.linspace(250e-9, 900e-9, num=15)
+
+    brewsters_angle = get_default_brewsters_angle()
+
+    for wavelength in wavelengths:
+        x = np.linspace(-np.pi/2, np.pi/2, num=300, endpoint=True)
+        plt.plot(x * 180 / np.pi, get_expected_intensities(x, brewsters_angle, 0.18, 3.4432, 50e-9, wavelength), ls="-", label=r"$\lambda = {:.4G}$".format(wavelength))
+
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
+
+def plot_range_of_depths():
+    depths = np.linspace(0.1e-9, 100e-9, num=15)
+
+    brewsters_angle = get_default_brewsters_angle()
+
+    for depth in depths:
+        x = np.linspace(-np.pi/2, np.pi/2, num=300, endpoint=True)
+        plt.plot(x * 180 / np.pi, get_expected_intensities(x, brewsters_angle, 0.18, 3.4432, depth, 632e-9), ls="-", lw=3, label="$d = {:.4G}$".format(depth))
+
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
+
+def plot_range_of_brewsters():
+    brewsters = np.linspace(0, np.pi, num=15)
+
+    for brewster in brewsters:
+        x = np.linspace(-np.pi/2, np.pi/2, num=300, endpoint=True)
+        plt.plot(x * 180 / np.pi, get_expected_intensities(x, brewster, 0.18, 3.4432, 50e-9, 632e-9), ls="-", lw=3, label=r"$\theta_B = {:.4G}$".format(brewster))
+
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
+
 read_data_and_plot("data/test.csv")
+
+# plot_range_of_wavelengths()
+# plot_range_of_depths()
+# plot_range_of_brewsters()

@@ -55,22 +55,56 @@ def get_thin_film_matrix(theta_incoming, n_air, n_gold, n_glass, k_air, k_gold, 
     # The true transmitted light after being transmitted, reflected, then transmimtted again
     T_gold_air = R_gold_glass * (1 - R_gold_air_at_100_percent)
 
-    # Sum the light which was initially reflected, and the light which was transmitted after all light bounces through the film
+    # # Sum the light which was initially reflected, and the light which was transmitted after all light bounces through the film
     T_total = R_air_gold + T_gold_air + R_gold_glass
 
     ratio = T_total[0] / T_total[1]
     
     # TODO get distance and wavelength involved in a better way
     # Psi is the angle at which the fast axis acts (the semi-major axis of the ellipse)
-    psi = np.modf(d / wavelength)[0] * 2 * (np.pi - np.atan2(np.abs(T_total[0]), np.abs(T_total[1])))
+    psi = np.pi - np.atan2(np.abs(T_total[0]), np.abs(T_total[1]))
     # Delta is the difference between the phase offset given, by this traversal, to the parallel and perpendicular components
-    delta = np.modf(d / wavelength)[0] * 2 * (np.pi - np.atan2(np.imag(ratio), np.real(ratio)))
+    # delta = n_gold * d / wavelength * 2 * (np.pi - np.atan2(np.imag(ratio), np.real(ratio)))
+    delta = (n_gold + n_air + n_glass) * d / wavelength * 2 * (np.pi - np.atan2(np.imag(ratio), np.real(ratio)))
+    # delta = (d/wavelength * 2 * np.pi) * (n_gold * np.cos(theta_refracted_air_gold) + n_air * np.cos(theta_incoming))
 
     # Describe this phase offset and the magnitude in a Jones' matrix
     return np.matrix([[np.sin(psi) * np.exp(1j * delta), 0], [0, np.cos(psi)]])
 
+# def jonesmodelthinfilm( wavelength , angle , n1 , k1 , n2 , k2 , d ) :
+#     import cmath
+#     N1 = complex ( n1 , k1 ) #D e f i n e Gold r e f r a c t i v e i n d e x v a r i a b l e s
+#     N2 = complex ( n2 , k2 ) #D e f i n e G l a s s r e f r a c t i v e i n d e x v a r i a b l e s
+
+#     anglerad = angle * ( np.pi /180) #c o n v e r t B rew ste r ' s a n g l e t o ←-
+
+
+#     beta = 2 * np.pi * ( d / wavelength ) * cmath.sqrt(N1**2 - np.sin(anglerad)**2)
+
+#     #d e f i n e components t o b u i l d t h e c o e f f i c i e n t o f r e f l e c t i o n f o r ←-
+#     # s-polarised and p-polarisedformulas
+#     c_t_0 = np.cos(anglerad)
+#     c_t_1 = cmath.sqrt((1-(1/N1**2))*np.sin(anglerad)**2)
+#     c_t_2 = cmath.sqrt((1-(1/N2**2))*np.sin(anglerad)**2)
+
+#     r01p = (N1* c_t_0 - c_t_1 ) / (N1* c_t_0 + c_t_1 )
+#     r01s= ( c_t_0 - N1* c_t_1 ) / ( c_t_0 + N1* c_t_1 )
+#     r12p = (N2* c_t_1 - N1* c_t_2 ) / (N2* c_t_1 + N1* c_t_2 )
+#     r12s= (N1* c_t_1 - N2* c_t_2 ) / (N1* c_t_1 + N2* c_t_2 )
+#     # C o e f f o f r e f l e c t i o n f o r p- and s- p o l a r i s e d l i g h t
+#     Rp = ( r01p + r12p * np.exp(-1j * 2 * beta ) ) / ( 1 + r01p * r12p* np.exp(-1j * 2 * beta ) )
+#     Rs=(r01s+r12s*np.exp(-1j*2*beta))/(1+r01s*r12s*np.exp(-1j*2*beta))
+#     #calculatepsianddeltafromRsandRp
+#     psi=(np.pi-np.arctan2(np.abs(Rp),np.abs(Rs)))
+#     delta=(np.pi-np.arctan2(np.imag(Rp/Rs),np.real(Rp/Rs)))
+#     #BuildJonesmatrixforreflectedlightusingpsianddelta
+#     J_g=np.array([[np.sin(psi)*np.exp(1j*delta),0.0],[0.0,np.cos(psi)]])
+
+#     return J_g
+
 def get_sample_matrix(sample_angle_of_incidence, n_air, n_gold, n_glass, k_air, k_gold, k_glass, d, wavelength):
     return get_thin_film_matrix(sample_angle_of_incidence, n_air, n_gold, n_glass, k_air, k_gold, k_glass, d, wavelength)
+    # return jonesmodelthinfilm(wavelength, sample_angle_of_incidence, n_gold, k_gold, n_glass, k_glass, d)
 
 # The default values for known parameters
 def get_default_refractive_index_param():
@@ -83,7 +117,7 @@ def get_default_brewsters_angle():
     return np.arctan(n_glass / n_air)
 
 # Calculates the expected intensity of the light, for a range of compensator angles, using the Jones' matrix ray transfer method
-def get_expected_intensities(compensator_angles, sample_angle_of_incidence, n_gold, k_gold, d, wavelength):
+def get_expected_intensities(compensator_angles, amplitude, sample_angle_of_incidence, n_gold, k_gold, d, wavelength):
     # Get the default parameters for this traversal
     (n_air, k_air), (n_glass, k_glass) = get_default_refractive_index_param()
     original_field_strength = np.array([1 / np.sqrt(2), 1 / np.sqrt(2)]) # Normalised 45 degree, linearly-polarised light
@@ -95,22 +129,28 @@ def get_expected_intensities(compensator_angles, sample_angle_of_incidence, n_go
     analyser_mat = get_rotated_linear_polariser_matrix(-polariser_angle)
 
     # Multiply the Jones' matrices in reverse order to represent the light-ray traversal, then multiply by the field strength vector to apply this combined matrix to it
-    final_field_strength = np.array([(((analyser_mat @ get_rotated_quarter_wave_plate(compensator_angle)) @ sample_mat) @ polarisation_mat) @ original_field_strength for compensator_angle in compensator_angles]) # Use @ instead of * to allow for different sized matrices to be dot-producted together
+    final_field_strength = np.array([analyser_mat @ get_rotated_quarter_wave_plate(compensator_angle) @ sample_mat @ polarisation_mat @ original_field_strength for compensator_angle in compensator_angles]) # Use @ instead of * to allow for different sized matrices to be dot-producted together
 
     # Normalise each field strength vector to get its intensity (taking the absolute value to ensure the answer is real)
-    intensities = np.linalg.norm(np.linalg.norm(np.abs(final_field_strength),axis=1), axis=1)
+    intensities = amplitude * np.linalg.norm(np.flip(np.linalg.norm(final_field_strength,axis=1) ** 2), axis=1)
+    # intensities = np.linalg.norm(np.flip(np.linalg.norm(final_field_strength,axis=1) ** 2), axis=1)
 
     return intensities
 
 # Fits the provided data to the expected intensities, returning the optimal parameters which were found, along with their errors
 def fit_data_to_expected(compensator_angles, measured_intensities, intensity_uncertainties):
     # Initial guesses for parameters
+    amplitude_guess = 1
     n_angle_guess = get_default_brewsters_angle()
     n_gold_guess, k_gold_guess = 0.18, 3.4432
     d_guess = 50e-9
     wavelength_guess = 630e-9
 
+    # Combine initial guesses into single array
+    initial_guesses = [amplitude_guess, n_angle_guess, n_gold_guess, k_gold_guess, d_guess, wavelength_guess]
+
     # Bounds for each guess
+    amplitude_bounds = [0.0001, 1]
     n_angle_bounds = [-np.pi/2, np.pi/2]
     n_gold_bounds = [0, 10]
     k_gold_bounds = [0, 10]
@@ -118,14 +158,14 @@ def fit_data_to_expected(compensator_angles, measured_intensities, intensity_unc
     wavelength_bounds = [100e-9, 1000e-9]
 
     # Combine bounds into single array
-    bounds = np.array([n_angle_bounds, n_gold_bounds, k_gold_bounds, d_bounds, wavelength_bounds])
+    bounds = np.array([amplitude_bounds, n_angle_bounds, n_gold_bounds, k_gold_bounds, d_bounds, wavelength_bounds])
 
     # Fit the data using these initial parameters
-    optimal_param, param_convolution = curve_fit(get_expected_intensities, compensator_angles, measured_intensities, p0=[n_angle_guess, n_gold_guess, k_gold_guess, d_guess, wavelength_guess], bounds=(bounds[::, 0], bounds[::, 1]), sigma=intensity_uncertainties, absolute_sigma=True, method="trf")
+    optimal_param, param_convolution = curve_fit(get_expected_intensities, compensator_angles, measured_intensities, p0=initial_guesses, bounds=(bounds[::, 0], bounds[::, 1]), sigma=intensity_uncertainties, method="trf")
 
     param_err = np.sqrt(np.diag(param_convolution ))
 
-    print("angle: {:.4G} +- {:.4G}\nn_gold: {:.4G} +- {:.4G}\nk_gold: {:.4G} +- {:.4G}\nd: {:.4G} +- {:.4G}\nwavelength: {:.4G} +- {:.4G}".format(optimal_param[0] * 180 / np.pi, param_err[0] * 180 / np.pi, optimal_param[1], param_err[1], optimal_param[2], param_err[2], optimal_param[3], param_err[3], optimal_param[4], param_err[4]))
+    print("amplitude: {:.4G} +- {:.4G}\nangle: {:.4G} +- {:.4G}\nn_gold: {:.4G} +- {:.4G}\nk_gold: {:.4G} +- {:.4G}\nd: {:.4G} +- {:.4G}\nwavelength: {:.4G} +- {:.4G}".format(optimal_param[0], param_err[0], optimal_param[1] * 180 / np.pi, param_err[1] * 180 / np.pi, optimal_param[2], param_err[2], optimal_param[3], param_err[3], optimal_param[4], param_err[4], optimal_param[5], param_err[5]))
 
     return optimal_param, param_err
 
@@ -179,8 +219,8 @@ def read_data_and_plot(filename):
     
     brewsters_angle = get_default_brewsters_angle()
     data = np.zeros(200)
-    data_x = np.linspace(-np.pi, np.pi, num=len(data), endpoint = True)
-    data_y = get_expected_intensities(data_x, brewsters_angle, 0.18, 3.4432, 50e-9, 632e-9)
+    data_x = np.linspace(0, np.pi, num=len(data), endpoint = True)
+    data_y = get_expected_intensities(data_x, 1, brewsters_angle, 0.18, 3.4432, 50e-9, 632e-9)
 
     # Format the figure and plot
     format_plot(max(data_y))
@@ -191,7 +231,7 @@ def read_data_and_plot(filename):
     plt.ylabel(r"Normalised Light Intensity ($I_{final} \div I_{initial}$)")
 
     # Uncertainty in the y-data
-    sigma_absolute = 0.02
+    sigma_absolute = 0.00001
     sigma = np.array([sigma_absolute for _ in data_y])
 
     # Fit the data to the function
@@ -217,7 +257,7 @@ def plot_range_of_wavelengths():
 
     for wavelength in wavelengths:
         x = np.linspace(-np.pi/2, np.pi/2, num=300, endpoint=True)
-        plt.plot(x * 180 / np.pi, get_expected_intensities(x, brewsters_angle, 0.18, 3.4432, 50e-9, wavelength), ls="-", label=r"$\lambda = {:.4G}$".format(wavelength))
+        plt.plot(x * 180 / np.pi, get_expected_intensities(x, 1, brewsters_angle, 0.18, 3.4432, 50e-9, wavelength), ls="-", label=r"$\lambda = {:.4G}$".format(wavelength))
 
     plt.legend()
     plt.tight_layout()
@@ -230,7 +270,7 @@ def plot_range_of_depths():
 
     for depth in depths:
         x = np.linspace(-np.pi/2, np.pi/2, num=300, endpoint=True)
-        plt.plot(x * 180 / np.pi, get_expected_intensities(x, brewsters_angle, 0.18, 3.4432, depth, 632e-9), ls="-", lw=3, label="$d = {:.4G}$".format(depth))
+        plt.plot(x * 180 / np.pi, get_expected_intensities(x, 1, brewsters_angle, 0.18, 3.4432, depth, 632e-9), ls="-", lw=3, label="$d = {:.4G}$".format(depth))
 
     plt.legend()
     plt.tight_layout()
@@ -241,7 +281,7 @@ def plot_range_of_brewsters():
 
     for brewster in brewsters:
         x = np.linspace(-np.pi/2, np.pi/2, num=300, endpoint=True)
-        plt.plot(x * 180 / np.pi, get_expected_intensities(x, brewster, 0.18, 3.4432, 50e-9, 632e-9), ls="-", lw=3, label=r"$\theta_B = {:.4G}$".format(brewster))
+        plt.plot(x * 180 / np.pi, get_expected_intensities(x, 1, brewster, 0.18, 3.4432, 50e-9, 632e-9), ls="-", lw=3, label=r"$\theta_B = {:.4G}$".format(brewster))
 
     plt.legend()
     plt.tight_layout()

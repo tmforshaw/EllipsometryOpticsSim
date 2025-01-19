@@ -135,19 +135,22 @@ def read_file_to_data(filename):
                 case _:
                     break
 
+        # Ensure that both arrays of data are the same length
+        assert len(angles) == len(intensities), "Data arrays are of different length:\n\tAngles: {}\tIntensities: {}".format(len(angles), len(intensities))
+
     return (angles, intensities)
     
 # Read the data from a file, then plot this data, alongside the expected intensities from the optimal fitting of the data
 def read_data_and_plot(filename):
     # Read the data and seperate it into x and y values
 
-    # data = read_file_to_data(filename)
-    # data_x, data_y = data[0], data[1]
+    data = read_file_to_data(filename)
+    data_x, data_y = data[0], data[1]
     
-    brewsters_angle = get_default_brewsters_angle()
-    data = np.zeros(200)
-    data_x = np.linspace(-np.pi, np.pi, num=len(data), endpoint = True)
-    data_y = get_expected_intensities(data_x, brewsters_angle, 0.18, 3.4432, 50e-9, 632e-9)
+    # brewsters_angle = get_default_brewsters_angle()
+    # data = np.zeros(200)
+    # data_x = np.linspace(-np.pi, np.pi, num=len(data), endpoint = True)
+    # data_y = get_expected_intensities(data_x, brewsters_angle, 0.18, 3.4432, 50e-9, 632e-9)
 
     # Format the figure and plot
 

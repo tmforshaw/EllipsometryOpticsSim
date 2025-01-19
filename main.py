@@ -95,8 +95,8 @@ def get_expected_intensities(compensator_angles, sample_angle_of_incidence, n_go
 
     return intensities
 
-# Fits the provided data to the expected intensities, returning the optimal parameters which were found
-def fit_data_to_expected(compensator_angles, measured_intensities):
+# Fits the provided data to the expected intensities, returning the optimal parameters which were found, along with their errors
+def fit_data_to_expected(compensator_angles, measured_intensities, intensity_uncertainties):
     # Initial guesses for parameters
     n_angle_guess = get_default_brewsters_angle()
     n_gold_guess, k_gold_guess = 0.18, 3.4432
@@ -114,11 +114,15 @@ def fit_data_to_expected(compensator_angles, measured_intensities):
     bounds = np.array([n_angle_bounds, n_gold_bounds, k_gold_bounds, d_bounds, wavelength_bounds])
 
     # Fit the data using these initial parameters
-    popt, pconv = curve_fit(get_expected_intensities, compensator_angles, measured_intensities, p0=[n_angle_guess, n_gold_guess, k_gold_guess, d_guess, wavelength_guess], bounds=(bounds[::, 0], bounds[::, 1]))
+    optimal_param, param_convolution = curve_fit(get_expected_intensities, compensator_angles, measured_intensities, p0=[n_angle_guess, n_gold_guess, k_gold_guess, d_guess, wavelength_guess], bounds=(bounds[::, 0], bounds[::, 1]), sigma=intensity_uncertainties, absolute_sigma=True)
 
-    print("angle: {:.4G}\nn_gold: {:.4G}\nk_gold: {:.4G}\nd: {:.4G}\nwavelength: {:.4G}".format(popt[0] * 180 / np.pi, popt[1], popt[2], popt[3], popt[4]))
+    param_err = np.sqrt(np.diag(param_convolution ))
 
-    return popt
+    print(param_err)
+
+    print("angle: {:.4G} +- {:.4G}\nn_gold: {:.4G} +- {:.4G}\nk_gold: {:.4G} +- {:.4G}\nd: {:.4G} +- {:.4G}\nwavelength: {:.4G} +- {:.4G}".format(optimal_param[0] * 180 / np.pi, param_err[0] * 180 / np.pi, optimal_param[1], param_err[1], optimal_param[2], param_err[2], optimal_param[3], param_err[3], optimal_param[4], param_err[4]))
+
+    return optimal_param, param_err
 
 # Read the data from a file and split it into the angle data and the intensity data
 def read_file_to_data(filename):
@@ -143,7 +147,6 @@ def read_file_to_data(filename):
 # Read the data from a file, then plot this data, alongside the expected intensities from the optimal fitting of the data
 def read_data_and_plot(filename):
     # Read the data and seperate it into x and y values
-
     data = read_file_to_data(filename)
     data_x, data_y = data[0], data[1]
     
@@ -156,6 +159,7 @@ def read_data_and_plot(filename):
 
     # Set the font size for the title and axes labels
     plt.rc('axes', titlesize=20, labelsize=20)
+    plt.rc('legend', fontsize=15)
 
     # Set the minor and major tick labels to different sizes
     plt.tick_params(axis='both', which='minor', labelsize=10)
@@ -179,16 +183,23 @@ def read_data_and_plot(filename):
     plt.xlabel("Compensator Angle [Degrees]")
     plt.ylabel(r"Normalised Light Intensity ($I_{final} \div I_{initial}$)")
 
+    # Uncertainty in the y-data
+    sigma_absolute = 0.02
+    sigma = np.array([sigma_absolute for _ in data_y])
+
     # Fit the data to the function
-    popt = fit_data_to_expected(data_x, data_y)
+    optimal_param, param_err = fit_data_to_expected(data_x, data_y, sigma)
 
     # Plot the light intensity expected for the fitted parameters
     x = np.linspace(min(data_x), max(data_x), num=len(data_x), endpoint=True)
-    plt.plot(x * 180 / np.pi, get_expected_intensities(x, *popt), c='k', ls="-")
+    plt.plot(x * 180 / np.pi, get_expected_intensities(x, *optimal_param), c='k', ls="-", label="Calculated Result")
 
     # Plot the measured data to the same figure
-    plt.scatter(data_x * 180 / np.pi, data_y, c='r')
+    # plt.errorbar(data_x * 180 / np.pi, data_y, c='r', yerr=sigma, fmt='o', label="Intensity Data")
+    plt.scatter(data_x * 180 / np.pi, data_y, c='r', label="Intensity Data")
+    plt.fill_between(data_x * 180 / np.pi, data_y - sigma, data_y + sigma, color="r", alpha=0.2, label="Errors on Intensity Data")
 
+    plt.legend()
     plt.tight_layout()
     plt.show()
 

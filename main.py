@@ -27,9 +27,20 @@ def modified_snells_law(theta_incoming, n1, n2, k1, k2):
     # Create complex variables from the components of the complex refractive indices
     N1 = np.complex64(n1, k1)
     N2 = np.complex64(n2, k2)
-    
+
     # Snell's law to find the outgoing angle
     theta_refracted = np.asin(N1 / N2 * np.sin(theta_incoming))
+
+    # brewsters_angle = np.atan2(n2, n1)
+
+    # A = np.tan(theta_incoming - theta_refracted) ** 2
+    # B = (np.tan(theta_incoming + theta_refracted) ** 2)
+    # C = np.sin(theta_incoming - theta_refracted) ** 2
+    # D =(np.sin(theta_incoming + theta_refracted) ** 2)
+
+    # print("Brewster: {}".format(brewsters_angle * 180/np.pi))
+    # print("{}\n{}\n{}\n{}".format(A, B, C, D))
+    
 
     # Calculate the reflected components for both the parallel and perpendicular components
     R_parallel = (np.tan(theta_incoming - theta_refracted) ** 2) / (np.tan(theta_incoming + theta_refracted) ** 2)
@@ -61,14 +72,14 @@ def get_thin_film_matrix(theta_incoming, n_air, n_gold, n_glass, k_air, k_gold, 
 
     ratio = T_total[0] / T_total[1]
     
+    N_gold = np.complex64(n_gold, k_gold)
+
     # TODO get distance and wavelength involved in a better way
     # Psi is the angle at which the fast axis acts (the semi-major axis of the ellipse)
     psi = np.pi - np.atan2(np.abs(T_total[0]), np.abs(T_total[1]))
 
-    psi = np.pi - np.atan2(np.abs(T_total[0]), np.abs(T_total[1]))
-
     # Delta is the difference between the phase offset given, by this traversal, to the parallel and perpendicular components
-    delta = n_gold * d / wavelength * 2 * (np.pi - np.atan2(np.imag(ratio), np.real(ratio)))
+    delta = N_gold * d / wavelength * 2 * (np.pi - np.atan2(np.imag(ratio), np.real(ratio)))
     # delta = (n_gold + n_air + n_glass) * d / wavelength * 2 * (np.pi - np.atan2(np.imag(ratio), np.real(ratio)))
     # delta = (d/wavelength * 2 * np.pi) * (n_gold * np.cos(theta_refracted_air_gold) + n_air * np.cos(theta_incoming))
 
@@ -77,15 +88,31 @@ def get_thin_film_matrix(theta_incoming, n_air, n_gold, n_glass, k_air, k_gold, 
     # delta = 2 * np.pi * (np.modf(np.real((2 * d * n_gold) * np.cos(theta_refracted_air_gold)) / wavelength)[0] + 0.5)
     # print(delta)
 
+    # psi = 2 * d * np.sin(theta_refracted_air_gold) * np.cos(theta_incoming)
+    # delta = (2 * np.pi * d) / (wavelength * np.cos(theta_refracted_air_gold))
+
     #Describe this phase offset and the magnitude in a Jones' matrix
     return (np.matrix([[np.sin(psi) * np.exp(1j * delta), 0], [0, np.cos(psi)]]))
+
+# Use the modified Snell's law to describe the full traversal of light through the thin gold film: air -> gold -> reflection from glass -> air
+def get_thin_film_matrix_2(theta_incoming, n_air, n_gold, n_glass, k_air, k_gold, k_glass, d, wavelength):
+    _, theta_refracted_air_gold = modified_snells_law(theta_incoming, n_air, n_gold, k_air, k_gold)
+    
+    N_gold = np.complex64(n_gold, k_gold)
+    
+    delta = 2 * np.pi / wavelength * N_gold * d * np.cos(theta_refracted_air_gold)
+
+    #Describe this phase offset and the magnitude in a Jones' matrix
+    return (np.matrix([[np.cos(delta), 1j * np.sin(delta) / (N_gold * np.cos(theta_refracted_air_gold))], [1j * N_gold * np.sin(delta) * np.cos(theta_refracted_air_gold), np.cos(delta)]]))
+
 
 def jonesmodelthinfilm( wavelength , angle , n1 , k1 , n2 , k2 , d ) :
     import cmath
     N1 = complex ( n1 , k1 ) #D e f i n e Gold r e f r a c t i v e i n d e x v a r i a b l e s
     N2 = complex ( n2 , k2 ) #D e f i n e G l a s s r e f r a c t i v e i n d e x v a r i a b l e s
 
-    anglerad = angle * ( np.pi /180) #c o n v e r t B rew ste r ' s a n g l e t o ←-
+    # anglerad = angle * ( np.pi /180) #c o n v e r t B rew ste r ' s a n g l e t o ←-
+    anglerad = angle
 
 
     beta = 2 * np.pi * ( d / wavelength ) * cmath.sqrt(N1**2 - np.sin(anglerad)**2)
@@ -112,7 +139,8 @@ def jonesmodelthinfilm( wavelength , angle , n1 , k1 , n2 , k2 , d ) :
     return J_g
 
 def get_sample_matrix(sample_angle_of_incidence, n_air, n_gold, n_glass, k_air, k_gold, k_glass, d, wavelength):
-    return get_thin_film_matrix(sample_angle_of_incidence, n_air, n_gold, n_glass, k_air, k_gold, k_glass, d, wavelength)
+    # return get_thin_film_matrix(sample_angle_of_incidence, n_air, n_gold, n_glass, k_air, k_gold, k_glass, d, wavelength)
+    return get_thin_film_matrix_2(sample_angle_of_incidence, n_air, n_gold, n_glass, k_air, k_gold, k_glass, d, wavelength)
     # return jonesmodelthinfilm(wavelength, sample_angle_of_incidence, n_gold, k_gold, n_glass, k_glass, d)
 
 # The default values for known parameters
@@ -139,9 +167,10 @@ def get_expected_intensities(compensator_angles, amplitude, sample_angle_of_inci
 
     # Multiply the Jones' matrices in reverse order to represent the light-ray traversal, then multiply by the field strength vector to apply this combined matrix to it
     final_field_strength = np.array([analyser_mat @ get_rotated_quarter_wave_plate(compensator_angle) @ sample_mat @ polarisation_mat @ original_field_strength for compensator_angle in compensator_angles]) # Use @ instead of * to allow for different sized matrices to be dot-producted together
+    # final_field_strength = np.array(analyser_mat @ get_rotated_quarter_wave_plate(83.15722658736905 * np.pi/180) @ sample_mat @ polarisation_mat @ original_field_strength) # Use @ instead of * to allow for different sized matrices to be dot-producted together
 
     # Normalise each field strength vector to get its intensity (taking the absolute value to ensure the answer is real)
-    intensities = amplitude * np.linalg.norm(np.linalg.norm(final_field_strength,axis=1) ** 2, axis=1) + offset
+    intensities = amplitude * np.linalg.norm(np.linalg.norm(final_field_strength,axis=1) ** 2, axis=1)
     # intensities = amplitude * np.linalg.norm(np.flip(np.linalg.norm(final_field_strength,axis=1) ** 2), axis=1)
 
     return intensities
@@ -243,6 +272,9 @@ def read_data_and_plot(filename):
     plt.xlabel("Compensator Angle [Degrees]")
     plt.ylabel(r"Normalised Light Intensity ($I_{final} \div I_{initial}$)")
 
+    # x = np.linspace(-np.pi/2, np.pi/2, num=500, endpoint=True)
+    # plt.plot(x, get_expected_intensities([], 1, 56, 0.18, 3.4432, 50e-9, 600e-9))
+
     # Uncertainty in the y-data
     sigma_absolute = 0.001
     sigma = np.array([sigma_absolute for _ in data_y])
@@ -302,7 +334,7 @@ def plot_range_of_brewsters():
     plt.tight_layout()
     plt.show()
 
-read_data_and_plot("data/FirstRun_Gold")
+read_data_and_plot("data/Gold_A_2")
 
 # plot_range_of_wavelengths()
 # plot_range_of_depths()

@@ -139,8 +139,8 @@ def jonesmodelthinfilm( wavelength , angle , n1 , k1 , n2 , k2 , d ) :
     return J_g
 
 def get_sample_matrix(sample_angle_of_incidence, n_air, n_gold, n_glass, k_air, k_gold, k_glass, d, wavelength):
-    # return get_thin_film_matrix(sample_angle_of_incidence, n_air, n_gold, n_glass, k_air, k_gold, k_glass, d, wavelength)
-    return get_thin_film_matrix_2(sample_angle_of_incidence, n_air, n_gold, n_glass, k_air, k_gold, k_glass, d, wavelength)
+    return get_thin_film_matrix(sample_angle_of_incidence, n_air, n_gold, n_glass, k_air, k_gold, k_glass, d, wavelength)
+    # return get_thin_film_matrix_2(sample_angle_of_incidence, n_air, n_gold, n_glass, k_air, k_gold, k_glass, d, wavelength)
     # return jonesmodelthinfilm(wavelength, sample_angle_of_incidence, n_gold, k_gold, n_glass, k_glass, d)
 
 # The default values for known parameters
@@ -157,13 +157,16 @@ def get_default_brewsters_angle():
 def get_expected_intensities(compensator_angles, amplitude, sample_angle_of_incidence, n_gold, k_gold, d, wavelength, offset = 0):
     # Get the default parameters for this traversal
     (n_air, k_air), (n_glass, k_glass) = get_default_refractive_index_param()
-    original_field_strength = np.array([1 / np.sqrt(2), 1 / np.sqrt(2)]) # Normalised 45 degree, linearly-polarised light
+    original_field_strength = np.array([1, 1]) / np.sqrt(2) # Normalised 45 degree, linearly-polarised light
 
     sample_mat = get_sample_matrix(sample_angle_of_incidence, n_air, n_gold, n_glass, k_air, k_gold, k_glass, d, wavelength)
 
-    polariser_angle = np.pi / 4 # 45 Degree Angle
-    polarisation_mat = get_rotated_linear_polariser_matrix(polariser_angle)
-    analyser_mat = get_rotated_linear_polariser_matrix(-polariser_angle)
+    # polariser_angle = np.pi / 4 # 45 Degree Angle
+    # polarisation_mat = get_rotated_linear_polariser_matrix(polariser_angle)
+    # analyser_mat = get_rotated_linear_polariser_matrix(-polariser_angle)
+
+    polarisation_mat = get_rotated_linear_polariser_matrix(0)
+    analyser_mat = get_rotated_linear_polariser_matrix(np.pi/2)
 
     # Multiply the Jones' matrices in reverse order to represent the light-ray traversal, then multiply by the field strength vector to apply this combined matrix to it
     final_field_strength = np.array([analyser_mat @ get_rotated_quarter_wave_plate(compensator_angle) @ sample_mat @ polarisation_mat @ original_field_strength for compensator_angle in compensator_angles]) # Use @ instead of * to allow for different sized matrices to be dot-producted together
@@ -249,6 +252,8 @@ def format_plot(y_max):
 
 # Read the data from a file, then plot this data, alongside the expected intensities from the optimal fitting of the data
 def read_data_and_plot(filename):
+    print("Data for {}:\n".format(filename))
+    
     # Read the data and seperate it into x and y values
     data = read_file_to_data(filename)
     data_x, data_y = data[0], data[1]
@@ -334,7 +339,7 @@ def plot_range_of_brewsters():
     plt.tight_layout()
     plt.show()
 
-read_data_and_plot("data/Gold_A_2")
+read_data_and_plot("data/Gold_A_1")
 
 # plot_range_of_wavelengths()
 # plot_range_of_depths()

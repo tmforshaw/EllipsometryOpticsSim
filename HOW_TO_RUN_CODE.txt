@@ -1,0 +1,5 @@
+Download both files and place them into the same folder
+Modify the code at the bottom of the main.py file so that the fit_from_data or plot_from_data functions access the files you want them to
+Run the main.py file using Python3
+
+If you need more information please ask, my email is tmforshaw@outlook.com if I don't reply on Discord

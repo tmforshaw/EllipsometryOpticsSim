@@ -39,7 +39,7 @@ def fresnel_reflection(theta_incoming, n1, k1, n2, k2):
     N1 =  n1 - 1j * k1
     N2 =  n2 - 1j * k2
 
-    theta_refracted = np.asin(N1 / N2 * np.sin(theta_incoming))
+    theta_refracted = np.asin((N1 / N2) * np.sin(theta_incoming))
 
     R_parallel = np.abs((N1 * np.cos(theta_refracted) - N2 * np.cos(theta_incoming)) / (N1 * np.cos(theta_refracted) + N2 * np.cos(theta_incoming))) ** 2
     R_perpendicular = np.abs((N1 * np.cos(theta_incoming) - N2 * np.cos(theta_refracted)) / (N1 * np.cos(theta_incoming) + N2 * np.cos(theta_refracted))) ** 2
@@ -100,23 +100,23 @@ def get_snell_thin_film_matrix(theta_incoming, n_air, n_gold, n_glass, k_air, k_
 # A thin film matrix which uses the fresnel equations
 def get_fresnel_thin_film_matrix(theta_incoming, n_air, n_gold, n_glass, k_air, k_gold, k_glass, d, wavelength):
     R_air_gold = fresnel_reflection(theta_incoming, n_air, k_air, n_gold, k_gold)
-    R_gold_glass = fresnel_reflection(theta_incoming, n_gold, k_gold, n_glass, k_glass)
-    R_gold_air = fresnel_reflection(theta_incoming, n_gold, k_gold, n_air, k_air)
+    R_gold_glass_at_100_percent = fresnel_reflection(theta_incoming, n_gold, k_gold, n_glass, k_glass)
+    R_gold_air_at_100_percent = fresnel_reflection(theta_incoming, n_gold, k_gold, n_air, k_air)
 
     # Transmitted into gold from air, reflected from glass back into gold, transmitted from gold into air
-    # Plus the initial reflection from the air-gold bouundary
-    R = (1 - R_air_gold) * R_gold_glass * (1 - R_gold_air) + R_air_gold
+    T_gold_air = (1 - R_air_gold) * R_gold_glass_at_100_percent * (1 - R_gold_air_at_100_percent)
 
-    R = R_gold_glass
+    # Reflection from air-gold and the transmitted from gold-air
+    Transmited_Light = R_air_gold + T_gold_air
 
-    psi = np.atan(R[0] / R[1])
+    psi = np.atan(Transmited_Light[0] / Transmited_Light[1])
     
-    # # N_gold = np.complex64(n_gold, k_gold)
-    N_gold = n_gold - 1j * k_gold
+    N_gold = np.complex64(n_gold, k_gold)
+    # N_gold = n_gold - 1j * k_gold
 
     delta = np.abs(2 * np.pi / wavelength * N_gold * d * np.cos(theta_incoming))
 
-    print("Psi: {:.4G}\tDelta: {:.4G}".format(psi * 180/np.pi, delta *180/np.pi))
+    # print("Psi: {:.4G}\tDelta: {:.4G}".format(psi * 180/np.pi, delta *180/np.pi))
 
     # #Describe this phase offset and the magnitude in a Jones' matrix
     return np.matrix([[np.sin(psi) * np.exp(1j * delta), 0], [0, np.cos(psi)]])

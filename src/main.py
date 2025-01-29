@@ -19,8 +19,8 @@ def get_default_brewsters_angle():
 def get_expected_intensities(compensator_angles, amplitude, sample_angle_of_incidence, n_gold, k_gold, d, wavelength, offset = 0):
     # Get the default parameters for this traversal
     (n_air, k_air), (n_glass, k_glass) = get_default_refractive_index_param()
-    original_field_strength = np.array([1, 1]) / np.sqrt(2) # Normalised 45 degree, linearly-polarised light
-    # original_field_strength = np.array([1, 0]) # Normalised 45 degree, linearly-polarised light
+    # original_field_strength = np.array([1, 1]) / np.sqrt(2) # Normalised 45 degree, linearly-polarised light
+    original_field_strength = np.array([1, 0]) # Parallel Linearly-Polarised Light
 
     sample_mat = get_sample_matrix(sample_angle_of_incidence, n_air, n_gold, n_glass, k_air, k_gold, k_glass, d, wavelength)
 
@@ -34,15 +34,9 @@ def get_expected_intensities(compensator_angles, amplitude, sample_angle_of_inci
     # Multiply the Jones' matrices in reverse order to represent the light-ray traversal, then multiply by the field strength vector to apply this combined matrix to it
     final_field_strength = np.array([analyser_mat @ get_rotated_quarter_wave_plate(compensator_angle) @ sample_mat @ polarisation_mat @ original_field_strength for compensator_angle in compensator_angles]) + offset # Use @ instead of * to allow for different sized matrices to be dot-producted together
 
-    # Normalise each field strength vector to get its intensity (taking the absolute value to ensure the answer is real)
-    # intensities = amplitude * np.linalg.norm(np.linalg.norm(final_field_strength,axis=1) ** 2, axis=1)
-    # intensities = amplitude * np.linalg.norm(np.flip(np.linalg.norm(final_field_strength,axis=1) ** 2), axis=1)
-
+    # Find the effective reflection and take the absolute value so it's real
     # R_effective = (R_paralell + R_perpendicular) / 2
-    intensities = amplitude * np.abs(np.sum(final_field_strength, axis=2).reshape(len(final_field_strength)) / 2)
-
-    # Flip the intensities vertically
-    # intensities = max(intensities) - intensities
+    intensities = amplitude * np.abs(np.sum(final_field_strength, axis=2).reshape(len(final_field_strength)) / 2) 
 
     return intensities
 
@@ -61,7 +55,7 @@ def fit_data_to_expected(compensator_angles, measured_intensities, intensity_unc
 
     # Bounds for each guess
     amplitude_bounds = [0.001, 1]
-    n_angle_bounds = [-np.pi/2, np.pi/2]
+    n_angle_bounds = [0, np.pi]
     n_gold_bounds = [0, 5]
     k_gold_bounds = [-1, 5]
     d_bounds = [0.1e-9, 100e-9]
@@ -74,7 +68,7 @@ def fit_data_to_expected(compensator_angles, measured_intensities, intensity_unc
     # Fit the data using these initial parameters
     optimal_param, param_convolution = curve_fit(get_expected_intensities, compensator_angles, measured_intensities, p0=initial_guesses, bounds=(bounds[::, 0], bounds[::, 1]), sigma=intensity_uncertainties, method="trf")
 
-    param_err = np.sqrt(np.diag(param_convolution ))
+    param_err = np.sqrt(np.diag(param_convolution))
 
     print("amplitude: {:.4G} +- {:.4G}\nangle: {:.4G} +- {:.4G}\nn_gold: {:.4G} +- {:.4G}\nk_gold: {:.4G} +- {:.4G}\nd: {:.4G} +- {:.4G}\nwavelength: {:.4G} +- {:.4G}\noffset: {:.4G} +- {:.4G}".format(optimal_param[0], param_err[0], optimal_param[1] * 180 / np.pi, param_err[1] * 180 / np.pi, optimal_param[2], param_err[2], optimal_param[3], param_err[3], optimal_param[4], param_err[4], optimal_param[5], param_err[5], optimal_param[6], param_err[6]))
 
@@ -149,9 +143,8 @@ def fit_from_data(filename):
     plt.plot(x * 180 / np.pi, get_expected_intensities(x, *optimal_param), c='k', ls="-", label="Calculated Result")
 
     # Plot the measured data to the same figure
+    # plt.errorbar(data_x * 180 / np.pi, data_y, c='r', alpha=0.2, yerr=sigma, fmt='o', label="Intensity Data")
     plt.scatter(data_x * 180 / np.pi, data_y, c='r', label="Intensity Data", lw=4)
-    # plt.errorbar(data_x * 180 / np.pi, data_y, c='r', yerr=sigma, fmt='o', label="Intensity Data")
-    # plt.scatter(data_x * 180 / np.pi, data_y, c='r', label="Intensity Data")
     # plt.fill_between(data_x * 180 / np.pi, data_y - sigma, data_y + sigma, color="r", alpha=0.2, label="Errors on Intensity Data")
 
     plt.legend()
@@ -222,7 +215,7 @@ def plot_default():
     brewsters_angle = get_default_brewsters_angle()
 
     x = np.linspace(0, np.pi * 2, num=300, endpoint=True)
-    plt.plot(x * 180 / np.pi, get_expected_intensities(x, 1, brewsters_angle, 0.18, -0.022, 50e-9, 632e-9), ls="-", lw=3, label="Plot")
+    plt.plot(x * 180 / np.pi, get_expected_intensities(x, 1, brewsters_angle, 3.443, -0.022, 50e-9, 632e-9), ls="-", lw=3, label="Plot")
 
     plt.legend()
     plt.tight_layout()

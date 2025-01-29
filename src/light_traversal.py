@@ -35,19 +35,19 @@ def modified_snells_law(theta_incoming, n1, n2, k1, k2):
     return (np.array([R_parallel, R_perpendicular]), theta_refracted)
 
 # Use the fresnel equations to calculate the reflected components of the light
-def fresnel_reflection(theta_incoming, n, k):
-    N =  n - 1j * k
+def fresnel_reflection(theta_incoming, n1, k1, n2, k2):
+    N1 =  n1 - 1j * k1
+    N2 =  n2 - 1j * k2
 
-    A = np.sqrt(N ** 2 - np.sin(theta_incoming) ** 2)
-    B = np.cos(theta_incoming)
+    theta_refracted = np.asin(N1 / N2 * np.sin(theta_incoming))
 
-    R_parallel = (N ** 2 * B - A) / (N ** 2 * B + A)
-    R_perpendicular = (B - A) / (B + A)
+    R_parallel = np.abs((N1 * np.cos(theta_refracted) - N2 * np.cos(theta_incoming)) / (N1 * np.cos(theta_refracted) + N2 * np.cos(theta_incoming))) ** 2
+    R_perpendicular = np.abs((N1 * np.cos(theta_incoming) - N2 * np.cos(theta_refracted)) / (N1 * np.cos(theta_incoming) + N2 * np.cos(theta_refracted))) ** 2
 
     return np.array([R_parallel, R_perpendicular])
 
 # Use the modified Snell's law to describe the full traversal of light through the thin gold film: air -> gold -> reflection from glass -> air
-def get_thin_film_matrix(theta_incoming, n_air, n_gold, n_glass, k_air, k_gold, k_glass, d, wavelength):
+def get_snell_thin_film_matrix(theta_incoming, n_air, n_gold, n_glass, k_air, k_gold, k_glass, d, wavelength):
     # Light enters gold via air-gold interface
     R_air_gold, theta_refracted_air_gold = modified_snells_law(theta_incoming, n_air, n_gold, k_air, k_gold)
 
@@ -98,31 +98,37 @@ def get_thin_film_matrix(theta_incoming, n_air, n_gold, n_glass, k_air, k_gold, 
     return (np.matrix([[np.sin(psi) * np.exp(1j * delta), 0], [0, np.cos(psi)]]))
 
 # A thin film matrix which uses the fresnel equations
-def get_thin_film_matrix_2(theta_incoming, n_air, n_gold, n_glass, k_air, k_gold, k_glass, d, wavelength):
-    # _, theta_refracted_air_gold = modified_snells_law(theta_incoming, n_air, n_gold, k_air, k_gold)
-    R = fresnel_reflection(theta_incoming, n_gold, k_gold)
+def get_fresnel_thin_film_matrix(theta_incoming, n_air, n_gold, n_glass, k_air, k_gold, k_glass, d, wavelength):
+    R_air_gold = fresnel_reflection(theta_incoming, n_air, k_air, n_gold, k_gold)
+    R_gold_glass = fresnel_reflection(theta_incoming, n_gold, k_gold, n_glass, k_glass)
+    R_gold_air = fresnel_reflection(theta_incoming, n_gold, k_gold, n_air, k_air)
+
+    # Transmitted into gold from air, reflected from glass back into gold, transmitted from gold into air
+    # Plus the initial reflection from the air-gold bouundary
+    R = (1 - R_air_gold) * R_gold_glass * (1 - R_gold_air) + R_air_gold
+
+    R = R_gold_glass
 
     psi = np.atan(R[0] / R[1])
     
     # # N_gold = np.complex64(n_gold, k_gold)
     N_gold = n_gold - 1j * k_gold
-    
-    # print(psi)
 
-    delta = 4 * np.pi / wavelength * N_gold * d * np.cos(theta_incoming)
+    delta = np.abs(2 * np.pi / wavelength * N_gold * d * np.cos(theta_incoming))
+
+    print("Psi: {:.4G}\tDelta: {:.4G}".format(psi * 180/np.pi, delta *180/np.pi))
 
     # #Describe this phase offset and the magnitude in a Jones' matrix
-    # return (np.matrix([[np.cos(delta), 1j * np.sin(delta) / (N_gold * np.cos(theta_refracted_air_gold))], [1j * N_gold * np.sin(delta) * np.cos(theta_refracted_air_gold), np.cos(delta)]]))
     return np.matrix([[np.sin(psi) * np.exp(1j * delta), 0], [0, np.cos(psi)]])
 
 # A thin film which uses the fresnel equations, as given by the PyPolar documentation
-def get_thin_film_matrix_3(theta_incoming, n_air, n_gold, n_glass, k_air, k_gold, k_glass, d, wavelength):
+def get_fresnel_thin_film_matrix_2(theta_incoming, n_air, n_gold, n_glass, k_air, k_gold, k_glass, d, wavelength):
     N_gold = n_gold * (1 - 1j * k_gold)
 
     theta_refracted = np.acos(np.sqrt(1 - (n_air / N_gold * np.sin(theta_incoming)) ** 2))
     
-    R_parallel = (N_gold * np.cos(theta_incoming) - n_air * np.cos(theta_refracted)) / (N_gold * np.cos(theta_incoming) + n_air * np.cos(theta_refracted))
-    R_perpendicular = (n_air * np.cos(theta_incoming) - N_gold * np.cos(theta_refracted)) / (n_air * np.cos(theta_incoming) + N_gold * np.cos(theta_refracted))
+    R_parallel = (N_gold * np.cos(theta_incoming) - n_glass * np.cos(theta_refracted)) / (N_gold * np.cos(theta_incoming) + n_glass * np.cos(theta_refracted))
+    R_perpendicular = (n_glass * np.cos(theta_incoming) - N_gold * np.cos(theta_refracted)) / (n_glass * np.cos(theta_incoming) + N_gold * np.cos(theta_refracted))
 
     R = np.array([R_parallel, R_perpendicular])
 
@@ -175,7 +181,7 @@ def jonesmodelthinfilm( wavelength , angle , n1 , k1 , n2 , k2 , d ) :
 
 # A helper function which can be used to switch out the sample matrix easily
 def get_sample_matrix(sample_angle_of_incidence, n_air, n_gold, n_glass, k_air, k_gold, k_glass, d, wavelength):
-    # return get_thin_film_matrix(sample_angle_of_incidence, n_air, n_gold, n_glass, k_air, k_gold, k_glass, d, wavelength)
-    # return get_thin_film_matrix_2(sample_angle_of_incidence, n_air, n_gold, n_glass, k_air, k_gold, k_glass, d, wavelength)
-    return get_thin_film_matrix_3(sample_angle_of_incidence, n_air, n_gold, n_glass, k_air, k_gold, k_glass, d, wavelength)
+    # return get_snell_thin_film_matrix(sample_angle_of_incidence, n_air, n_gold, n_glass, k_air, k_gold, k_glass, d, wavelength)
+    return get_fresnel_thin_film_matrix(sample_angle_of_incidence, n_air, n_gold, n_glass, k_air, k_gold, k_glass, d, wavelength)
+    # return get_fresnel_thin_film_matrix_2(sample_angle_of_incidence, n_air, n_gold, n_glass, k_air, k_gold, k_glass, d, wavelength)
     # return jonesmodelthinfilm(wavelength, sample_angle_of_incidence, n_gold, k_gold, n_glass, k_glass, d)

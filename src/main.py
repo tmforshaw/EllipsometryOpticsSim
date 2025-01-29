@@ -35,8 +35,11 @@ def get_expected_intensities(compensator_angles, amplitude, sample_angle_of_inci
     final_field_strength = np.array([analyser_mat @ get_rotated_quarter_wave_plate(compensator_angle) @ sample_mat @ polarisation_mat @ original_field_strength for compensator_angle in compensator_angles]) + offset # Use @ instead of * to allow for different sized matrices to be dot-producted together
 
     # Normalise each field strength vector to get its intensity (taking the absolute value to ensure the answer is real)
-    intensities = amplitude * np.linalg.norm(np.linalg.norm(final_field_strength,axis=1) ** 2, axis=1)
+    # intensities = amplitude * np.linalg.norm(np.linalg.norm(final_field_strength,axis=1) ** 2, axis=1)
     # intensities = amplitude * np.linalg.norm(np.flip(np.linalg.norm(final_field_strength,axis=1) ** 2), axis=1)
+
+    # R_effective = (R_paralell + R_perpendicular) / 2
+    intensities = amplitude * np.abs(np.sum(final_field_strength, axis=2).reshape(len(final_field_strength)) / 2)
 
     # Flip the intensities vertically
     # intensities = max(intensities) - intensities

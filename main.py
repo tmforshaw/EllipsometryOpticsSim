@@ -309,12 +309,6 @@ def read_data_and_fit(filename):
     data = read_file_to_data(filename)
     data_x, data_y = data[0], data[1]
 
-    # # Clean the data up
-    # avg_data_y = np.sum(data_y) / len(data_y)
-    # new_data_indices = np.where(abs(data_y) < avg_data_y * 1.5)
-    # data_x = data_x[new_data_indices]
-    # data_y = data_y[new_data_indices]
-
     # brewsters_angle = get_default_brewsters_angle()
     # data = np.zeros(200)
     # data_x = np.linspace(0, np.pi, num=len(data), endpoint = True)

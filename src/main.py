@@ -7,22 +7,35 @@ from light_traversal import get_rotated_linear_polariser_matrix, get_rotated_qua
 
 # The default values for known parameters
 def get_default_refractive_index_param():
-    n_air, k_air = 1, 0
-    n_glass, k_glass = 1.5, 0
-    return ((n_air, k_air), (n_glass, k_glass))
+    N_air = 1 + 0j
+    N_glass = 1.5 + 0j
+    return (N_air, N_glass)
+
+    # n_air, k_air = 1, 0
+    # n_glass, k_glass = 1.5, 0
+    # return ((n_air, k_air), (n_glass, k_glass))
 
 def get_default_brewsters_angle():
-    (n_air, _), (n_glass, _) = get_default_refractive_index_param()
-    return np.arctan(n_glass / n_air)
+    # (n_air, _), (n_glass, _) = get_default_refractive_index_param()
+    N_air, N_glass = get_default_refractive_index_param()
+    return np.arctan(np.real(N_glass) / np.real(N_air))
+
+def get_complex_refractive_index(n, k):
+    # return n + 1j * k
+    return n - 1j * k
 
 # Calculates the expected intensity of the light, for a range of compensator angles, using the Jones' matrix ray transfer method
 def get_expected_intensities(compensator_angles, amplitude, sample_angle_of_incidence, n_gold, k_gold, d, wavelength, offset = 0):
     # Get the default parameters for this traversal
-    (n_air, k_air), (n_glass, k_glass) = get_default_refractive_index_param()
+    N_air, N_glass = get_default_refractive_index_param()
+
+    # Turn the n_gold and k_gold into a complex refractive index
+    N_gold = get_complex_refractive_index(n_gold, k_gold)
+
     # original_field_strength = np.array([1, 1]) / np.sqrt(2) # Normalised 45 degree, linearly-polarised light
     original_field_strength = np.array([1, 0]) # Parallel Linearly-Polarised Light
 
-    sample_mat = get_sample_matrix(sample_angle_of_incidence, n_air, n_gold, n_glass, k_air, k_gold, k_glass, d, wavelength)
+    sample_mat = get_sample_matrix(sample_angle_of_incidence, N_air, N_gold, N_glass, d, wavelength)
 
     # polariser_angle = np.pi / 4 # 45 Degree Angle
     # polarisation_mat = get_rotated_linear_polariser_matrix(polariser_angle)

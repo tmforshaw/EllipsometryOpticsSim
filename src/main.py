@@ -21,7 +21,6 @@ def get_default_brewsters_angle():
     return np.arctan(np.real(N_glass) / np.real(N_air))
 
 def get_complex_refractive_index(n, k):
-    # return n + 1j * k
     return n - 1j * k
 
 # Calculates the expected intensity of the light, for a range of compensator angles, using the Jones' matrix ray transfer method
@@ -73,6 +72,7 @@ def fit_data_to_expected(compensator_angles, measured_intensities, intensity_unc
     k_gold_bounds = [-1, 5]
     d_bounds = [0.1e-9, 100e-9]
     wavelength_bounds = [100e-9, 1000e-9]
+    # wavelength_bounds = [600e-9, 700e-9]
     offset_bounds = [0, 1]
 
     # Combine bounds into single array
@@ -122,8 +122,8 @@ def format_plot(y_max):
     plt.grid(visible = True, axis="x", which = "major", ls="-", c="k")
     plt.grid(visible = True, axis="x", which = "minor", ls="-.")
 
-    # Remove the margins around the data
-    plt.margins(x=0, y=y_max / 50, tight=True)
+    # # Remove the margins around the data
+    # plt.margins(x=0, y=y_max / 50, tight=True)
 
 # Read the data from a file, then plot this data, alongside the expected intensities from the optimal fitting of the data
 def fit_from_data(filename):
@@ -152,13 +152,18 @@ def fit_from_data(filename):
     optimal_param, param_err = fit_data_to_expected(data_x, data_y, sigma)
 
     # Plot the light intensity expected for the fitted parameters
-    x = np.linspace(min(data_x), max(data_x), num=len(data_x), endpoint=True)
-    plt.plot(x * 180 / np.pi, get_expected_intensities(x, *optimal_param), c='k', ls="-", label="Calculated Result")
+    # x = np.linspace(min(data_x), max(data_x), num=len(data_x), endpoint=True)
+    plt.plot(data_x * 180 / np.pi, get_expected_intensities(data_x, *optimal_param), c='k', ls="-", label="Calculated Result")
 
     # Plot the measured data to the same figure
     # plt.errorbar(data_x * 180 / np.pi, data_y, c='r', alpha=0.2, yerr=sigma, fmt='o', label="Intensity Data")
     plt.scatter(data_x * 180 / np.pi, data_y, c='r', label="Intensity Data", lw=4)
     # plt.fill_between(data_x * 180 / np.pi, data_y - sigma, data_y + sigma, color="r", alpha=0.2, label="Errors on Intensity Data")
+
+
+    # Plot the expected intensities from known values
+    # plt.plot(data_x * 180 / np.pi, get_expected_intensities(data_x, 0.3, get_default_brewsters_angle(), 3.5, -0.22, 50e-9, 632e-9, offset=0.007187), ls="-", lw=3, label="Plot")
+    
 
     plt.legend()
     plt.tight_layout()
@@ -239,7 +244,6 @@ def plot_default():
 fit_from_data("data/Gold_B_3")
 # plot_from_data("data/Gold_B_3")
 # fit_from_data("data/Glass_3")
-
 
 # plot_range_of_wavelengths()
 # plot_range_of_depths()

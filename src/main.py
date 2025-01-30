@@ -11,12 +11,7 @@ def get_default_refractive_index_param():
     N_glass = 1.5 + 0j
     return (N_air, N_glass)
 
-    # n_air, k_air = 1, 0
-    # n_glass, k_glass = 1.5, 0
-    # return ((n_air, k_air), (n_glass, k_glass))
-
 def get_default_brewsters_angle():
-    # (n_air, _), (n_glass, _) = get_default_refractive_index_param()
     N_air, N_glass = get_default_refractive_index_param()
     return np.arctan(np.real(N_glass) / np.real(N_air))
 
@@ -48,7 +43,7 @@ def get_expected_intensities(compensator_angles, amplitude, sample_angle_of_inci
 
     # Find the effective reflection and take the absolute value so it's real
     # R_effective = (R_paralell + R_perpendicular) / 2
-    intensities = amplitude * np.abs(np.sum(final_field_strength, axis=2).reshape(len(final_field_strength)) / 2) 
+    intensities = np.abs(np.sum(final_field_strength, axis=2).reshape(len(final_field_strength)) / 2) * amplitude
 
     return intensities
 
@@ -125,6 +120,9 @@ def format_plot(y_max):
     # # Remove the margins around the data
     # plt.margins(x=0, y=y_max / 50, tight=True)
 
+def normalise_data(data_y):
+    return data_y / max(data_y)
+
 # Read the data from a file, then plot this data, alongside the expected intensities from the optimal fitting of the data
 def fit_from_data(filename):
     print("Data for {}:\n".format(filename))
@@ -132,6 +130,9 @@ def fit_from_data(filename):
     # Read the data and seperate it into x and y values
     data = read_file_to_data(filename)
     data_x, data_y = data[0], data[1]
+
+    # # TODO Normalise the data
+    # data_y = normalise_data(data_y)
 
     # Format the figure and plot
     format_plot(max(data_y))
@@ -160,9 +161,9 @@ def fit_from_data(filename):
     plt.scatter(data_x * 180 / np.pi, data_y, c='r', label="Intensity Data", lw=4)
     # plt.fill_between(data_x * 180 / np.pi, data_y - sigma, data_y + sigma, color="r", alpha=0.2, label="Errors on Intensity Data")
 
-
-    # Plot the expected intensities from known values
+    # # Plot the expected intensities from known values
     # plt.plot(data_x * 180 / np.pi, get_expected_intensities(data_x, 0.3, get_default_brewsters_angle(), 3.5, -0.22, 50e-9, 632e-9, offset=0.007187), ls="-", lw=3, label="Plot")
+    # plt.plot(data_x * 180 / np.pi, get_expected_intensities(data_x, 0.3, get_default_brewsters_angle(), 3.5, -0.22, 10e-9, 632e-9, offset=0.007187), ls="-", lw=3, label="Plot")
     
 
     plt.legend()

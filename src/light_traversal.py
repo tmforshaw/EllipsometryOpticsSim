@@ -30,7 +30,6 @@ def modified_snells_law(theta_incoming, N1, N2):
 
 # Use the fresnel equations to calculate the reflected components of the light
 def fresnel_reflection(theta_incoming, N1, N2, wavelength):
-    # Adjust the calculation to account for the wavelength change
     theta_refracted = np.asin((N1 / N2) * np.sin(theta_incoming))
 
     R_parallel = np.abs((N1 * np.cos(theta_refracted) - N2 * np.cos(theta_incoming)) / (N1 * np.cos(theta_refracted) + N2 * np.cos(theta_incoming))) ** 2
@@ -94,8 +93,8 @@ def get_fresnel_thin_film_matrix(theta_incoming, N_air, N_gold, N_glass, d, wave
     T_gold_air = (1 - R_air_gold) * R_gold_glass_at_100_percent * (1 - R_gold_air_at_100_percent)
 
     # Reflection from air-gold and the transmitted from gold-air
-    # Transmited_Light = R_air_gold + T_gold_air
-    Transmited_Light = R_air_gold
+    Transmited_Light = R_air_gold + T_gold_air
+    # Transmited_Light = R_air_gold
 
     psi = np.atan(Transmited_Light[0] / Transmited_Light[1])
 

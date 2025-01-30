@@ -92,8 +92,10 @@ def get_fresnel_thin_film_matrix(theta_incoming, N_air, N_gold, N_glass, d, wave
     # Transmitted into gold from air, reflected from glass back into gold, transmitted from gold into air
     T_gold_air = (1 - R_air_gold) * R_gold_glass_at_100_percent * (1 - R_gold_air_at_100_percent)
 
+    T_air_gold_glass_gold_glass_gold_air = (1 - R_air_gold) * R_gold_glass_at_100_percent * R_gold_air_at_100_percent * R_gold_glass_at_100_percent * (1 - R_gold_air_at_100_percent)
+
     # Reflection from air-gold and the transmitted from gold-air
-    Transmited_Light = R_air_gold + T_gold_air
+    Transmited_Light = R_air_gold + T_gold_air 
     # Transmited_Light = R_air_gold
 
     psi = np.atan(Transmited_Light[0] / Transmited_Light[1])
@@ -101,16 +103,21 @@ def get_fresnel_thin_film_matrix(theta_incoming, N_air, N_gold, N_glass, d, wave
     n_gold = np.real(N_gold)
     k_gold = np.imag(N_gold)
 
-    # delta = 4 * np.pi * n_gold / wavelength * d * np.cos(theta_incoming)
-    delta = (4 * np.pi * N_gold / wavelength * d * np.sin(theta_incoming))
-    # delta = (2 * np.pi * N_gold / wavelength * d * np.sin(theta_incoming))
+    delta = 4 * np.pi * N_gold / wavelength * d * np.cos(theta_incoming)
+
+    # delta = 4 * np.pi * N_gold / wavelength * d * np.cos(theta_incoming)
+    # delta = 4 * np.pi * N_gold / wavelength * d * np.sin(theta_incoming)
+    # delta = (4 * np.pi * n_gold / wavelength * d * np.cos(theta_incoming))
+    # delta = (4 * np.pi * n_gold / wavelength * d * np.sin(theta_incoming))
 
     # psi = (n_gold * np.cos(theta_incoming) * np.sqrt(1 - (k_gold ** 2 / (n_gold ** 2 + k_gold ** 2)))) / (np.sqrt(n_gold ** 2 + k_gold ** 2) * np.sqrt(1 - (np.sin(theta_incoming) ** 2 / (n_gold ** 2 + k_gold ** 2))))
 
-    # print("Psi: {:.4G}\tDelta: {:.4G}".format(psi * 180/np.pi, delta *180/np.pi))
+    print("Psi: {:.4G}\tDelta: {:.4G}".format(psi * 180/np.pi, delta *180/np.pi))
 
-    # #Describe this phase offset and the magnitude in a Jones' matrix
+    #Describe this phase offset and the magnitude in a Jones' matrix
     return np.matrix([[np.sin(psi) * np.exp(1j * delta), 0], [0, np.cos(psi)]])
+
+    # return np.matrix([[Transmited_Light[0], 0], [0, Transmited_Light[1]]])
 
 # A thin film which uses the fresnel equations, as given by the PyPolar documentation
 def get_fresnel_thin_film_matrix_2(theta_incoming, N_air, N_gold, N_glass, d, wavelength):
@@ -128,6 +135,9 @@ def get_fresnel_thin_film_matrix_2(theta_incoming, N_air, N_gold, N_glass, d, wa
     # #Describe this phase offset and the magnitude in a Jones' matrix
     # return (np.matrix([[np.cos(delta), 1j * np.sin(delta) / (N_gold * np.cos(theta_refracted_air_gold))], [1j * N_gold * np.sin(delta) * np.cos(theta_refracted_air_gold), np.cos(delta)]]))
     return (np.matrix([[np.sin(psi) * np.exp(1j * delta), 0], [0, np.cos(psi)]]))
+
+def get_psi_delta_matrix(psi, delta):
+    return np.matrix([[np.sin(psi) * np.exp(1j * delta), 0], [0, np.cos(psi)]])
 
 # The Thin Film Matrix used by the 2023 paper
 def jonesmodelthinfilm( wavelength , angle , n1 , k1 , n2 , k2 , d ) :

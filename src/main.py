@@ -39,13 +39,13 @@ def get_expected_intensities(compensator_angles, amplitude, sample_angle_of_inci
     analyser_mat = get_rotated_linear_polariser_matrix(np.pi / 2)
 
     # Multiply the Jones' matrices in reverse order to represent the light-ray traversal, then multiply by the field strength vector to apply this combined matrix to it
-    final_field_strength = np.array([analyser_mat @ get_rotated_quarter_wave_plate(compensator_angle) @ sample_mat @ get_rotated_quarter_wave_plate(-compensator_angle) @ polarisation_mat @ original_field_strength for compensator_angle in compensator_angles])# Use @ instead of * to allow for different sized matrices to be dot-producted together
+    final_field_strength = np.array([analyser_mat @ get_rotated_quarter_wave_plate(compensator_angle) @ sample_mat @ polarisation_mat @ original_field_strength for compensator_angle in compensator_angles])# Use @ instead of * to allow for different sized matrices to be dot-producted together
 
     # Find the effective reflection and take the absolute value so it's real
     # R_effective = (R_paralell + R_perpendicular) / 2
     intensities = np.abs(np.sum(final_field_strength, axis=2).reshape(len(final_field_strength)) / 2) * amplitude + offset 
 
-    intensities /= max(intensities)
+    # intensities /= max(intensities)
 
     return intensities
 
@@ -64,22 +64,22 @@ def get_expected_intensities_psi_delta(compensator_angles, sample_angle_of_incid
 
     sample_mat = get_psi_delta_matrix(psi, delta)
 
-    polariser_angle = np.pi / 4 # 45 Degree Angle
-    polarisation_mat = get_rotated_linear_polariser_matrix(-polariser_angle)
-    analyser_mat = get_rotated_linear_polariser_matrix(polariser_angle)
+    # polariser_angle = np.pi / 4 # 45 Degree Angle
+    # polarisation_mat = get_rotated_linear_polariser_matrix(-polariser_angle)
+    # analyser_mat = get_rotated_linear_polariser_matrix(polariser_angle)
 
-    # polarisation_mat = get_rotated_linear_polariser_matrix(0)
-    # analyser_mat = get_rotated_linear_polariser_matrix(np.pi / 2)
+    polarisation_mat = get_rotated_linear_polariser_matrix(0)
+    analyser_mat = get_rotated_linear_polariser_matrix(np.pi / 2)
 
     # Multiply the Jones' matrices in reverse order to represent the light-ray traversal, then multiply by the field strength vector to apply this combined matrix to it
-    final_field_strength = np.array([((((analyser_mat @ get_rotated_quarter_wave_plate(compensator_angle)) @ sample_mat) @ get_rotated_quarter_wave_plate(-compensator_angle)) @ polarisation_mat) @ original_field_strength for compensator_angle in compensator_angles])# Use @ instead of * to allow for different sized matrices to be dot-producted together
+    final_field_strength = np.array([analyser_mat @ get_rotated_quarter_wave_plate(compensator_angle - offset) @ sample_mat @ polarisation_mat @ original_field_strength for compensator_angle in compensator_angles])# Use @ instead of * to allow for different sized matrices to be dot-producted together
 
     # Find the effective reflection and take the absolute value so it's real
     # R_effective = (R_paralell + R_perpendicular) / 2
     intensities = np.abs(np.sum(final_field_strength, axis=2).reshape(len(final_field_strength)) / 2) / np.cos(psi)
 
-    # intensities /= max(intensities)
-    intensities += offset
+    intensities /= max(intensities)
+    # intensities += offset
 
     return intensities
 
@@ -131,9 +131,10 @@ def fit_data_to_expected_psi_delta(compensator_angles, measured_intensities, int
 
     # Bounds for each guess
     angle_bounds = [0, np.pi]
-    psi_bounds = [0, np.pi/2]
-    delta_bounds = [np.pi/4, 3*np.pi/4]
-    offset_bounds = [0, 1]
+    psi_bounds = [0, np.pi]
+    delta_bounds = [0, np.pi]
+    # offset_bounds = [0, 1]
+    offset_bounds = [-np.pi, np.pi]
 
     # Combine bounds into single array
     bounds = np.array([angle_bounds, psi_bounds, delta_bounds, offset_bounds])
@@ -213,8 +214,7 @@ def fit_from_data(filename):
 
     # Fit the data to the function
     optimal_param, param_err = fit_data_to_expected(data_x, data_y, sigma)
-    # Plot the light intensity expected for the fitted parameters
-    plt.plot(data_x * 180 / np.pi, get_expected_intensities(data_x, *optimal_param), c='k', ls="-", label="Calculated Result")
+    plt.plot(data_x * 180 / np.pi, get_expected_intensities(data_x, *optimal_param), c='k', ls="-", label="Calculated Result") # Plot the light intensity expected for the fitted parameters
 
     # Plot the measured data to the same figure
     # plt.errorbar(data_x * 180 / np.pi, data_y, c='r', alpha=0.2, yerr=sigma, fmt='o', label="Intensity Data")
@@ -304,9 +304,9 @@ def plot_default():
 
 # plot_default()
 
-fit_from_data("data/Gold_B_2")
+fit_from_data("data/Gold_B_3")
 # plot_from_data("data/Gold_B_3")
-# fit_from_data("data/Glass_3")
+# fit_from_data("data/Glass_2")
 
 # plot_range_of_wavelengths()
 # plot_range_of_depths()

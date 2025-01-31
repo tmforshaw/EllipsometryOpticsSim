@@ -9,11 +9,17 @@ def get_rotated_linear_polariser_matrix(theta):
 
 # A quarter waveplate which is rotated about an angle theta (w.r.t horizontal) [The Compensator]
 def get_rotated_quarter_wave_plate(theta):
+    delta = np.pi/4 # 45 Degree (Quarter Wave Plate)
+
     cos_theta = np.cos(theta)
     sin_theta = np.sin(theta)
-    combined_sin_cos = (1 - 1j) * sin_theta * cos_theta
+    # combined_sin_cos = (1 - np.exp(-1j * delta)) * sin_theta * cos_theta
+    combined_sin_cos = (np.exp(1j * delta) - 1) * sin_theta * cos_theta
+    # combined_sin_cos = (1j - 1) * sin_theta * cos_theta
 
-    return np.exp(-1j * np.pi / 4) * np.matrix([[cos_theta ** 2 + 1j * sin_theta ** 2, combined_sin_cos], [combined_sin_cos, sin_theta ** 2 + 1j * cos_theta ** 2]])
+    # return np.exp(-1j * delta) * np.matrix([[cos_theta ** 2 + 1j * sin_theta ** 2, combined_sin_cos], [combined_sin_cos, sin_theta ** 2 + 1j * cos_theta ** 2]])
+    return np.exp(-1j * delta) * np.matrix([[np.exp(1j * delta) * cos_theta ** 2 + sin_theta ** 2, combined_sin_cos], [combined_sin_cos, np.exp(1j * delta) * sin_theta ** 2 + cos_theta ** 2]])
+    # return np.exp(-1j * delta) * np.matrix([[1j * cos_theta ** 2 + sin_theta ** 2, combined_sin_cos], [combined_sin_cos, 1j * sin_theta ** 2 + cos_theta ** 2]])
 
 # Uses a more in-depth version of Snell's law to describe how the parallel and perpendicular components of the electric field are reflected differently
 # returns an array with the parallel and perpendicular components of the reflected light [0-1]
@@ -103,10 +109,10 @@ def get_fresnel_thin_film_matrix(theta_incoming, N_air, N_gold, N_glass, d, wave
     n_gold = np.real(N_gold)
     k_gold = np.imag(N_gold)
 
-    delta = 4 * np.pi * N_gold / wavelength * d * np.cos(theta_incoming)
+    # delta = 4 * np.pi * N_gold / wavelength * d * np.cos(theta_incoming)
 
     # delta = 4 * np.pi * N_gold / wavelength * d * np.cos(theta_incoming)
-    # delta = 4 * np.pi * N_gold / wavelength * d * np.sin(theta_incoming)
+    delta = 4 * np.pi * N_gold / wavelength * d * np.sin(theta_incoming)
     # delta = (4 * np.pi * n_gold / wavelength * d * np.cos(theta_incoming))
     # delta = (4 * np.pi * n_gold / wavelength * d * np.sin(theta_incoming))
 

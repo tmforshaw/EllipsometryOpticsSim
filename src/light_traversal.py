@@ -1,34 +1,25 @@
 import numpy as np
 
-# A linear polariser which is rotated about an angle theta (w.r.t horizontal)
-def get_rotated_linear_polariser_matrix(theta):
+def get_rotation_matrix(theta):
     cos_theta = np.cos(theta)
     sin_theta = np.sin(theta)
 
-    # return np.matrix([[cos_theta ** 2, cos_theta * sin_theta], [cos_theta * sin_theta, sin_theta ** 2]])
+    return np.matrix([[cos_theta, -sin_theta], [sin_theta, cos_theta]])
 
-    return np.matrix([[cos_theta, -sin_theta], [sin_theta, cos_theta]]) * np.matrix([[1, 0], [0, 0]]) * np.matrix([[cos_theta, sin_theta], [-sin_theta, cos_theta]])
+# A linear polariser which is rotated about an angle theta (w.r.t horizontal)
+def get_rotated_linear_polariser_matrix(theta):
+    # Rotate horizontally (parallel) polarised light by an angle theta
+    return get_rotation_matrix(theta) @ np.matrix([[1, 0], [0, 0]]) @ get_rotation_matrix(-theta)
 
 # A quarter waveplate which is rotated about an angle theta (w.r.t horizontal) [The Compensator]
 def get_rotated_quarter_wave_plate(theta):
-    # delta = np.pi/4 # 45 Degree (Quarter Wave Plate)
-
-    # cos_theta = np.cos(theta)
-    # sin_theta = np.sin(theta)
-    # # combined_sin_cos = (1 - np.exp(-1j * delta)) * sin_theta * cos_theta
-    # combined_sin_cos = (np.exp(1j * delta) - 1) * sin_theta * cos_theta
-    # # combined_sin_cos = (1j - 1) * sin_theta * cos_theta
-
-    # # return np.exp(-1j * delta) * np.matrix([[cos_theta ** 2 + 1j * sin_theta ** 2, combined_sin_cos], [combined_sin_cos, sin_theta ** 2 + 1j * cos_theta ** 2]])
-    # return np.exp(-1j * delta) * np.matrix([[np.exp(1j * delta) * cos_theta ** 2 + sin_theta ** 2, combined_sin_cos], [combined_sin_cos, np.exp(1j * delta) * sin_theta ** 2 + cos_theta ** 2]])
-    # # return np.exp(-1j * delta) * np.matrix([[1j * cos_theta ** 2 + sin_theta ** 2, combined_sin_cos], [combined_sin_cos, 1j * sin_theta ** 2 + cos_theta ** 2]])
-
     delta = np.pi / 2
 
-    cos_theta = np.cos(theta)
-    sin_theta = np.sin(theta)
+    return get_rotation_matrix(theta) @ np.matrix([[1, 0], [0, np.exp(-1j * delta)]]) @ get_rotation_matrix(-theta)
 
-    return np.matrix([[cos_theta, -sin_theta], [sin_theta, cos_theta]]) * np.matrix([[1, 0], [0, np.exp(-1j * delta)]]) * np.matrix([[cos_theta, sin_theta], [-sin_theta, cos_theta]])
+#Describe the phase offset and fast-axis angle in a Jones' matrix
+def get_matrix_from_psi_delta(psi, delta):
+    return np.matrix([[np.sin(psi) * np.exp(1j * delta), 0], [0, np.cos(psi)]])
 
 # Uses a more in-depth version of Snell's law to describe how the parallel and perpendicular components of the electric field are reflected differently
 # returns an array with the parallel and perpendicular components of the reflected light [0-1]
@@ -42,15 +33,6 @@ def modified_snells_law(theta_incoming, N1, N2):
     R_perpendicular = (np.sin(theta_incoming - theta_refracted) ** 2) / (np.sin(theta_incoming + theta_refracted) ** 2)
 
     return (np.array([R_parallel, R_perpendicular]), theta_refracted)
-
-# Use the fresnel equations to calculate the reflected components of the light
-def fresnel_reflection(theta_incoming, N1, N2, wavelength):
-    theta_refracted = np.asin((N1 / N2) * np.sin(theta_incoming))
-
-    R_parallel = np.abs((N1 * np.cos(theta_refracted) - N2 * np.cos(theta_incoming)) / (N1 * np.cos(theta_refracted) + N2 * np.cos(theta_incoming))) ** 2
-    R_perpendicular = np.abs((N1 * np.cos(theta_incoming) - N2 * np.cos(theta_refracted)) / (N1 * np.cos(theta_incoming) + N2 * np.cos(theta_refracted))) ** 2
-
-    return np.array([R_parallel, R_perpendicular])
 
 # Use the modified Snell's law to describe the full traversal of light through the thin gold film: air -> gold -> reflection from glass -> air
 def get_snell_thin_film_matrix(theta_incoming, N_air, N_gold, N_glass, d, wavelength):
@@ -79,24 +61,21 @@ def get_snell_thin_film_matrix(theta_incoming, N_air, N_gold, N_glass, d, wavele
     # Psi is the angle at which the fast axis acts (the semi-major axis of the ellipse)
     psi = np.pi - np.atan2(np.abs(T_total[0]), np.abs(T_total[1]))
 
-    # print("Psi: {}".format(psi))
-
     # Delta is the difference between the phase offset given, by this traversal, to the parallel and perpendicular components
-    delta = N_gold * d / wavelength * 2 * (np.pi - np.atan2(np.imag(ratio), np.real(ratio)))
-    # delta = (n_gold + n_air + n_glass) * d / wavelength * 2 * (np.pi - np.atan2(np.imag(ratio), np.real(ratio)))
-    # delta = (d/wavelength * 2 * np.pi) * (n_gold * np.cos(theta_refracted_air_gold) + n_air * np.cos(theta_incoming))
+    delta = np.abs(N_gold * d * 4 * (np.pi - np.atan2(np.imag(ratio), np.real(ratio))))
 
-    # delta = (2 * np.pi / wavelength * d) * np.cos(theta_refracted_air_gold)
+    # print("Psi: {:.4G}\tDelta: {:.4G}".format(psi * 180/np.pi, delta* 180/np.pi))
 
-    # delta = 2 * np.pi * (np.modf(np.real((2 * d * n_gold) * np.cos(theta_refracted_air_gold)) / wavelength)[0] + 0.5)
+    return get_matrix_from_psi_delta(psi, delta)
 
-    # psi = 2 * d * np.sin(theta_refracted_air_gold) * np.cos(theta_incoming)
-    # delta = (2 * np.pi * d) / (wavelength * np.cos(theta_refracted_air_gold))
+# Use the fresnel equations to calculate the reflected components of the light
+def fresnel_reflection(theta_incoming, N1, N2, wavelength):
+    theta_refracted = np.asin((N1 / N2) * np.sin(theta_incoming))
 
-    # print("Psi: {:.4G}\nDelta: {:.4G}".format(psi * 180/np.pi, delta* 180/np.pi))
+    R_parallel = np.abs((N1 * np.cos(theta_refracted) - N2 * np.cos(theta_incoming)) / (N1 * np.cos(theta_refracted) + N2 * np.cos(theta_incoming))) ** 2
+    R_perpendicular = np.abs((N1 * np.cos(theta_incoming) - N2 * np.cos(theta_refracted)) / (N1 * np.cos(theta_incoming) + N2 * np.cos(theta_refracted))) ** 2
 
-    #Describe this phase offset and the magnitude in a Jones' matrix
-    return (np.matrix([[np.sin(psi) * np.exp(1j * delta), 0], [0, np.cos(psi)]]))
+    return np.array([R_parallel, R_perpendicular])
 
 # A thin film matrix which uses the fresnel equations
 def get_fresnel_thin_film_matrix(theta_incoming, N_air, N_gold, N_glass, d, wavelength):
@@ -110,6 +89,7 @@ def get_fresnel_thin_film_matrix(theta_incoming, N_air, N_gold, N_glass, d, wave
     T_air_gold_glass_gold_glass_gold_air = (1 - R_air_gold) * R_gold_glass_at_100_percent * R_gold_air_at_100_percent * R_gold_glass_at_100_percent * (1 - R_gold_air_at_100_percent)
 
     # Reflection from air-gold and the transmitted from gold-air
+    # Transmited_Light = R_air_gold + T_gold_air + T_air_gold_glass_gold_glass_gold_air
     Transmited_Light = R_air_gold + T_gold_air
     # Transmited_Light = R_air_gold
 
@@ -120,76 +100,129 @@ def get_fresnel_thin_film_matrix(theta_incoming, N_air, N_gold, N_glass, d, wave
     n_gold = np.real(N_gold)
     k_gold = np.imag(N_gold)
 
-    # delta = 4 * np.pi * N_gold / wavelength * d * np.cos(theta_incoming)
-    delta = np.abs(4 * np.pi * N_gold / wavelength * d * np.sin(theta_incoming))
+    # delta = 4 * np.pi * N_gold / wavelength * d * np.sin(theta_incoming)
+    # delta = np.modf(np.abs(2 * np.pi * N_gold / wavelength * d * np.sin(theta_incoming)) / (2 * np.pi))[0] * 2 * np.pi
+    # delta = np.abs(4 * np.pi * N_gold / wavelength * d * np.sin(theta_incoming))
     # delta = (4 * np.pi * n_gold / wavelength * d * np.cos(theta_incoming))
-    # delta = (4 * np.pi * n_gold / wavelength * d * np.sin(theta_incoming))
+    delta = (4 * np.pi * n_gold * d * np.cos(theta_incoming))
 
     # psi = (n_gold * np.cos(theta_incoming) * np.sqrt(1 - (k_gold ** 2 / (n_gold ** 2 + k_gold ** 2)))) / (np.sqrt(n_gold ** 2 + k_gold ** 2) * np.sqrt(1 - (np.sin(theta_incoming) ** 2 / (n_gold ** 2 + k_gold ** 2))))
 
-    print("Psi: {:.4G}\tDelta: {:.4G}".format(psi * 180/np.pi, delta *180/np.pi))
+    # print("Psi: {:.4G}\tDelta: {:.4G}".format(psi * 180/np.pi, delta *180/np.pi))
 
     #Describe this phase offset and the magnitude in a Jones' matrix
-    return np.matrix([[np.sin(psi) * np.exp(1j * delta), 0], [0, np.cos(psi)]])
+    return get_matrix_from_psi_delta(psi, delta)
 
-    # return np.matrix([[Transmited_Light[0], 0], [0, Transmited_Light[1]]])
-
-# A thin film which uses the fresnel equations, as given by the PyPolar documentation
-def get_fresnel_thin_film_matrix_2(theta_incoming, N_air, N_gold, N_glass, d, wavelength):
-    theta_refracted = np.acos(np.sqrt(1 - (N_air / N_gold * np.sin(theta_incoming)) ** 2))
+def scattering_matrix(n_au, n_quartz, d_au, d_quartz, ang):
+    from scipy.linalg import expm
     
-    R_parallel = (N_gold * np.cos(theta_incoming) - N_glass * np.cos(theta_refracted)) / (N_gold * np.cos(theta_incoming) + N_glass * np.cos(theta_refracted))
-    R_perpendicular = (N_glass * np.cos(theta_incoming) - N_gold * np.cos(theta_refracted)) / (N_glass * np.cos(theta_incoming) + N_gold * np.cos(theta_refracted))
-
-    R = np.array([R_parallel, R_perpendicular])
-
-    psi = np.atan(R[0] / R[1])
-
-    delta = 2 * np.pi / wavelength * N_gold * d * np.cos(theta_incoming)
-
-    # #Describe this phase offset and the magnitude in a Jones' matrix
-    # return (np.matrix([[np.cos(delta), 1j * np.sin(delta) / (N_gold * np.cos(theta_refracted_air_gold))], [1j * N_gold * np.sin(delta) * np.cos(theta_refracted_air_gold), np.cos(delta)]]))
-    return (np.matrix([[np.sin(psi) * np.exp(1j * delta), 0], [0, np.cos(psi)]]))
-
-def get_psi_delta_matrix(psi, delta):
-    return np.matrix([[np.sin(psi) * np.exp(1j * delta), 0], [0, np.cos(psi)]])
-
-# The Thin Film Matrix used by the 2023 paper
-def jonesmodelthinfilm( wavelength , angle , n1 , k1 , n2 , k2 , d ) :
-    import cmath
-    N1 = complex ( n1 , k1 ) #D e f i n e Gold r e f r a c t i v e i n d e x v a r i a b l e s
-    N2 = complex ( n2 , k2 ) #D e f i n e G l a s s r e f r a c t i v e i n d e x v a r i a b l e s
-
-    beta = 2 * np.pi * ( d / wavelength ) * cmath.sqrt(N1**2 - np.sin(angle)**2)
-
-    # define components to build the coefficient of reflection for s-polarised and p-polarised formulas
-    c_t_0 = np.cos(angle)
-    c_t_1 = cmath.sqrt((1-(1/N1**2))*np.sin(angle)**2)
-    c_t_2 = cmath.sqrt((1-(1/N2**2))*np.sin(angle)**2)
-
-    r01p = (N1* c_t_0 - c_t_1 ) / (N1* c_t_0 + c_t_1 )
-    r01s= ( c_t_0 - N1* c_t_1 ) / ( c_t_0 + N1* c_t_1 )
-    r12p = (N2* c_t_1 - N1* c_t_2 ) / (N2* c_t_1 + N1* c_t_2 )
-    r12s= (N1* c_t_1 - N2* c_t_2 ) / (N1* c_t_1 + N2* c_t_2 )
-
-    # Coeff of reflection for p and s-polarised light
-    Rp = ( r01p + r12p * np.exp(-1j * 2 * beta ) ) / ( 1 + r01p * r12p* np.exp(-1j * 2 * beta ) )
-    Rs=(r01s+r12s*np.exp(-1j*2*beta))/(1+r01s*r12s*np.exp(-1j*2*beta))
-
-    # calculate psi and delta from Rs and Rp
-    psi=(np.pi-np.arctan2(np.abs(Rp),np.abs(Rs)))
-    delta=(np.pi-np.arctan2(np.imag(Rp/Rs),np.real(Rp/Rs)))
-
-    # print("Psi: {:.4G}\nDelta: {:.4G}".format(psi * 180/np.pi, delta* 180/np.pi))
+    # Simulation parameters
+    lam0 = 632.8e-9  # Free space wavelength
+    k0 = (2 * np.pi) / lam0
+    theta = ang # Elevation angle
+    psi = 0 # Azimuthal angle
+    pte = 1 / np.sqrt(2)  # Amplitude of TE polarization
+    ptm = 1j * pte  # Amplitude of TM polarization
+    ni = 1.0  # Incident medium refractive index
     
-    # Build Jones matrix for reflected light using psi and delta
-    J_g=np.array([[np.sin(psi)*np.exp(1j*delta),0.0],[0.0,np.cos(psi)]])
+    # External materials
+    ur1, er1 = 1.0, 1.0
+    ur2, er2 = 1.0, 1.0
+    
+    # Define layers
+    N = 2
+    UR = np.array([1, 1])
+    ER = np.array([n_au**2, n_quartz**2])
+    L = np.array([d_au, d_quartz])
+    
+    # Initialize matrices
+    Kx = ni * np.sin(theta) * np.cos(psi)
+    Ky = ni * np.sin(theta) * np.sin(psi)
+    Kzh = np.sqrt(1 - Kx**2 - Ky**2)
+    
+    Wh = np.eye(2)
+    Qh = np.array([[Kx * Ky, 1 - Kx**2],
+                   [Ky**2 - 1, -Kx * Ky]])
+    Omh = 1j * Kzh * np.eye(2)
+    Vh = Qh @ np.linalg.inv(Omh)
+    
+    Sg11 = np.zeros((2, 2), dtype=complex)
+    Sg12 = np.eye(2)
+    Sg21 = np.eye(2)
+    Sg22 = np.zeros((2, 2), dtype=complex)
+    
+    # Reflection side
+    Krz = np.sqrt(ur1 * er1 - Kx**2 - Ky**2)
+    Pr = (1 / er1) * np.array([[Kx * Ky, ur1 * er1 - Kx**2],
+                                [Ky**2 - ur1 * er1, -Kx * Ky]])
+    Qr = (1 / ur1) * Pr
+    Omr = 1j * Krz * np.eye(2)
+    Wr = np.eye(2)
+    Vr = Qr @ np.linalg.inv(Omr)
+    
+    H = np.linalg.inv(Vh) @ Vr
+    Ar = np.eye(2) + H
+    Br = np.eye(2) - H
+    G = np.linalg.inv(Ar) @ Br
+    
+    Sref11 = -np.linalg.inv(Ar) @ Br
+    Sref12 = 2 * np.eye(2) @ np.linalg.inv(Ar)
+    Sref21 = 0.5 * np.eye(2) @ (Ar - G @ Br)
+    Sref22 = G
+    
+    # Update global scattering matrices
+    SA11, SA12, SA21, SA22 = Sref11, Sref12, Sref21, Sref22
+    SB11, SB12, SB21, SB22 = Sg11, Sg12, Sg21, Sg22
+    
+    D = np.linalg.inv(np.eye(2) - SB11 @ SA22) @ SA12
+    F = np.linalg.inv(np.eye(2) - SA22 @ SB11) @ SB21
+    
+    Sg11 = SA11 + D @ SB11 @ SA21
+    Sg12 = D @ SB12
+    Sg21 = F @ SA21
+    Sg22 = SB22 + F @ SA22 @ SB12
+    
+    for ii in range(N):
+        Kz = np.sqrt(UR[ii] * ER[ii] - Kx**2 - Ky**2)
+        
+        Q = (1 / UR[ii]) * np.array([[Kx * Ky, UR[ii] * ER[ii] - Kx**2],
+                                      [Ky**2 - UR[ii] * ER[ii], -Kx * Ky]])
+        Om = 1j * Kz * np.eye(2)
+        V = Q @ np.linalg.inv(Om)
+        H = np.linalg.inv(V) @ Vh
+        A = np.eye(2) + H
+        B = np.eye(2) - H
+        X = expm(Om * k0 * L[ii])
+        G = np.linalg.inv(A) @ B
+        M = X @ G @ X
+        L_mat = A - M @ B
+        
+        S11 = np.linalg.inv(L_mat) @ (M @ A - B)
+        S12 = np.linalg.inv(L_mat) @ X @ (A - G @ B)
+        S21 = S12
+        S22 = S11
+        
+        # Update global scattering matrices
+        SA11, SA12, SA21, SA22 = Sg11, Sg12, Sg21, Sg22
+        SB11, SB12, SB21, SB22 = S11, S12, S21, S22
+        
+        D = np.linalg.inv(np.eye(2) - SB11 @ SA22) @ SA12
+        F = np.linalg.inv(np.eye(2) - SA22 @ SB11) @ SB21
+        
+        Sg11 = SA11 + D @ SB11 @ SA21
+        Sg12 = D @ SB12
+        Sg21 = F @ SA21
+        Sg22 = SB22 + F @ SA22 @ SB12
+    
+    psi = np.arctan(np.abs(Sg11[0, 0] / Sg11[1, 1]))
+    delta = np.angle(Sg11[0, 0] / Sg11[1, 1])
 
-    return J_g
+    # print("Psi: {:.4G}\tDelta: {:.4G}".format(psi * 180/np.pi, delta *180/np.pi))
+    
+    return get_matrix_from_psi_delta(psi, delta)
 
 # A helper function which can be used to switch out the sample matrix easily
 def get_sample_matrix(sample_angle_of_incidence, N_air, N_gold, N_glass, d, wavelength):
     # return get_snell_thin_film_matrix(sample_angle_of_incidence, N_air, N_gold, N_glass, d, wavelength)
-    return get_fresnel_thin_film_matrix(sample_angle_of_incidence, N_air, N_gold, N_glass, d, wavelength)
-    # return get_fresnel_thin_film_matrix_2(sample_angle_of_incidence, N_air, N_gold, N_glass, d, wavelength)
-    # return jonesmodelthinfilm(wavelength, sample_angle_of_incidence, np.real(N_gold), np.imag(N_gold), np.real(N_glass), np.imag(N_glass), d)
+    # return get_fresnel_thin_film_matrix(sample_angle_of_incidence, N_air, N_gold, N_glass, d, wavelength)
+    return scattering_matrix(N_gold, N_glass, d, 0.01, sample_angle_of_incidence)

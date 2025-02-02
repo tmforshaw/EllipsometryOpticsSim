@@ -3,20 +3,21 @@ import numpy as np
 from scipy.optimize import curve_fit
 
 # Import the functions from the light_traversal.py file
-from light_traversal import get_rotated_linear_polariser_matrix, get_rotated_quarter_wave_plate, get_sample_matrix,get_psi_delta_matrix
+from light_traversal import get_rotated_linear_polariser_matrix, get_rotated_quarter_wave_plate, get_sample_matrix
 
 # The default values for known parameters
 def get_default_refractive_index_param():
     N_air = get_complex_refractive_index(1, 0)
-    N_glass = get_complex_refractive_index(1.5, 0)
+    N_glass = get_complex_refractive_index(1.457, 0)
     return (N_air, N_glass)
 
 def get_default_brewsters_angle():
-    N_air, N_glass = get_default_refractive_index_param()
-    return np.arctan(np.real(N_glass) / np.real(N_air))
+    # N_air, N_glass = get_default_refractive_index_param()
+    # return np.arctan(np.real(N_glass) / np.real(N_air))
+    return 55 * np.pi/180
 
 def get_complex_refractive_index(n, k):
-    return n - 1j * k
+    return n + 1j * k
 
 # Calculates the expected intensity of the light, for a range of compensator angles, using the Jones' matrix ray transfer method
 def get_expected_intensities(compensator_angles, amplitude, sample_angle_of_incidence, n_gold, k_gold, d, wavelength, offset = 0):
@@ -26,20 +27,12 @@ def get_expected_intensities(compensator_angles, amplitude, sample_angle_of_inci
     # Turn the n_gold and k_gold into a complex refractive index
     N_gold = get_complex_refractive_index(n_gold, k_gold)
 
-    # original_field_strength = np.array([1, 1]) / np.sqrt(2) # Normalised 45 degree, linearly-polarised light
     original_field_strength = np.array([1, 0]) # Parallel Linearly-Polarised Light
 
     sample_mat = get_sample_matrix(sample_angle_of_incidence, N_air, N_gold, N_glass, d, wavelength)
 
-    # polariser_angle = np.pi / 4 # 45 Degree Angle
-    # polarisation_mat = get_rotated_linear_polariser_matrix(-polariser_angle)
-    # analyser_mat = get_rotated_linear_polariser_matrix(polariser_angle)
-
-    # polarisation_mat = get_rotated_linear_polariser_matrix(0)
-    # analyser_mat = get_rotated_linear_polariser_matrix(np.pi / 2)
-
-    polarisation_mat = get_rotated_linear_polariser_matrix(np.pi / 4)
-    analyser_mat = get_rotated_linear_polariser_matrix(0)
+    polarisation_mat = get_rotated_linear_polariser_matrix(0)
+    analyser_mat = get_rotated_linear_polariser_matrix(np.pi / 2)
 
     # Multiply the Jones' matrices in reverse order to represent the light-ray traversal, then multiply by the field strength vector to apply this combined matrix to it
     final_field_strength = np.array([analyser_mat @ get_rotated_quarter_wave_plate(compensator_angle) @ sample_mat @ polarisation_mat @ original_field_strength for compensator_angle in compensator_angles])# Use @ instead of * to allow for different sized matrices to be dot-producted together
@@ -50,117 +43,43 @@ def get_expected_intensities(compensator_angles, amplitude, sample_angle_of_inci
 
     # intensities = np.sum(np.abs(final_field_strength) ** 2, axis=2).reshape(len(final_field_strength)) * amplitude + offset 
 
-    # intensities = np.abs(np.linalg.norm(final_field_strength, axis=2).reshape(len(final_field_strength))) * amplitude + offset 
-
-    intensities /= max(intensities)
-
-    return intensities
-
-# Calculates the expected intensity of the light, for a range of compensator angles, using the Jones' matrix ray transfer method
-def get_expected_intensities_psi_delta(compensator_angles, sample_angle_of_incidence, psi, delta, offset = 0):
-    # # Get the default parameters for this traversal
-    # N_air, N_glass = get_default_refractive_index_param()
-
-    # # Turn the n_gold and k_gold into a complex refractive index
-    # N_gold = get_complex_refractive_index(n_gold, k_gold)
-
-    # original_field_strength = np.array([1, 1]) / np.sqrt(2) # Normalised 45 degree, linearly-polarised light
-    original_field_strength = np.array([1, 0]) # Parallel Linearly-Polarised Light
-
-    # sample_mat = get_sample_matrix(sample_angle_of_incidence, N_air, N_gold, N_glass, d, wavelength)
-
-    sample_mat = get_psi_delta_matrix(psi, delta)
-
-    # polariser_angle = np.pi / 4 # 45 Degree Angle
-    # polarisation_mat = get_rotated_linear_polariser_matrix(-polariser_angle)
-    # analyser_mat = get_rotated_linear_polariser_matrix(polariser_angle)
-
-    # polarisation_mat = get_rotated_linear_polariser_matrix(0)
-    # analyser_mat = get_rotated_linear_polariser_matrix(np.pi / 2)
-
-    polarisation_mat = get_rotated_linear_polariser_matrix(np.pi /2)
-    analyser_mat = get_rotated_linear_polariser_matrix(0)
-
-    # # Multiply the Jones' matrices in reverse order to represent the light-ray traversal, then multiply by the field strength vector to apply this combined matrix to it
-    # final_field_strength = np.array([analyser_mat @ get_rotated_quarter_wave_plate(compensator_angle - offset) @ sample_mat @ polarisation_mat @ original_field_strength for compensator_angle in compensator_angles])# Use @ instead of * to allow for different sized matrices to be dot-producted together
-
-    final_field_strength = np.array([analyser_mat @ get_rotated_quarter_wave_plate(compensator_angle - offset) @ sample_mat @ polarisation_mat @ original_field_strength for compensator_angle in compensator_angles])# Use @ instead of * to allow for different sized matrices to be dot-producted together
-
-    # Find the effective reflection and take the absolute value so it's real
-    # R_effective = (R_paralell + R_perpendicular) / 2
-    intensities = np.abs(np.sum(final_field_strength, axis=2).reshape(len(final_field_strength)) / 2) / np.cos(psi)
-
-    # print(np.linalg.norm(np.abs(final_field_strength), axis=2).flatten(), "\n")
-
-    # intensities = np.linalg.norm(np.abs(final_field_strength), axis=2).flatten() ** 2
-
-    intensities /= max(intensities)
-    # intensities += offset
+    # intensities /= max(intensities)
 
     return intensities
 
 # Fits the provided data to the expected intensities, returning the optimal parameters which were found, along with their errors
 def fit_data_to_expected(compensator_angles, measured_intensities, intensity_uncertainties):
-    # Initial guesses for parameters
-    amplitude_guess = 1
-    n_angle_guess = get_default_brewsters_angle()
-    n_gold_guess, k_gold_guess = 3.85, -0.22
-    d_guess = 50e-9
-    wavelength_guess = 632.8e-9
-    offset_guess = 0
+    # Initial guesses and bounds for parameters
+    amplitude_guess,  amplitude_bounds  = 1,                             [0.001, 1]
+    n_angle_guess,    n_angle_bounds    = get_default_brewsters_angle(), [50 * np.pi/180, 60 * np.pi / 180]
+    n_gold_guess,     n_gold_bounds     = 0.19404,                       [0, 5]
+    k_gold_guess,     k_gold_bounds     = 3.5934,                        [-1, 5]
+    d_guess,          d_bounds          = 40e-9,                         [0.1e-9, 100e-9]
+    wavelength_guess, wavelength_bounds = 632.8e-9,                      [600e-9, 700e-9]
+    offset_guess,     offset_bounds     = 0,                             [0, 1]
 
     # Combine initial guesses into single array
     initial_guesses = [amplitude_guess, n_angle_guess, n_gold_guess, k_gold_guess, d_guess, wavelength_guess, offset_guess]
-
-    # Bounds for each guess
-    amplitude_bounds = [0.001, 1]
-    n_angle_bounds = [0, np.pi]
-    n_gold_bounds = [0, 5]
-    k_gold_bounds = [-1, 5]
-    d_bounds = [0.1e-9, 100e-9]
-    wavelength_bounds = [600e-9, 700e-9]
-    # wavelength_bounds = [600e-9, 700e-9]
-    offset_bounds = [0, 1]
 
     # Combine bounds into single array
     bounds = np.array([amplitude_bounds, n_angle_bounds, n_gold_bounds, k_gold_bounds, d_bounds, wavelength_bounds, offset_bounds])
 
     # Fit the data using these initial parameters
-    optimal_param, param_convolution = curve_fit(get_expected_intensities, compensator_angles, measured_intensities, p0=initial_guesses, bounds=(bounds[::, 0], bounds[::, 1]), sigma=intensity_uncertainties, method="trf")
+    optimal_param, param_convolution = curve_fit(get_expected_intensities, compensator_angles, measured_intensities, p0=initial_guesses, bounds=(bounds[::, 0], bounds[::, 1]))
 
     param_err = np.sqrt(np.diag(param_convolution))
 
-    print("amplitude: {:.4G} +- {:.4G}\nangle: {:.4G} +- {:.4G}\nn_gold: {:.4G} +- {:.4G}\nk_gold: {:.4G} +- {:.4G}\nd: {:.4G} +- {:.4G}\nwavelength: {:.4G} +- {:.4G}\noffset: {:.4G} +- {:.4G}".format(optimal_param[0], param_err[0], optimal_param[1] * 180 / np.pi, param_err[1] * 180 / np.pi, optimal_param[2], param_err[2], optimal_param[3], param_err[3], optimal_param[4], param_err[4], optimal_param[5], param_err[5], optimal_param[6], param_err[6]))
+    parameter_names = ["Amplitude", "Angle", "N_gold", "K_gold", "d", "Wavelength", "Offset"]
 
-    return optimal_param, param_err
+    for i, (name, param, err) in enumerate(zip(parameter_names, optimal_param, param_err)):
+        match i:
+            case(1 | 6):
+                param *= 180/np.pi
+                err *= 180/np.pi
+            
+        print("{}: {:.4G} +- {:.4G}".format(name, param, err))
 
-# Fits the provided data to the expected intensities, returning the optimal parameters which were found, along with their errors
-def fit_data_to_expected_psi_delta(compensator_angles, measured_intensities, intensity_uncertainties):
-    # Initial guesses for parameters
-    angle_guess = get_default_brewsters_angle()
-    psi_guess = 23.671 * np.pi/180
-    delta_guess = 93.471 * np.pi/180
-    offset_guess = 0
-
-    # Combine initial guesses into single array
-    initial_guesses = [angle_guess, psi_guess, delta_guess, offset_guess]
-
-    # Bounds for each guess
-    angle_bounds = [0, np.pi]
-    psi_bounds = [-np.pi, np.pi]
-    delta_bounds = [-np.pi, np.pi]
-    # offset_bounds = [0, 1]
-    offset_bounds = [-np.pi, np.pi]
-
-    # Combine bounds into single array
-    bounds = np.array([angle_bounds, psi_bounds, delta_bounds, offset_bounds])
-
-    # Fit the data using these initial parameters
-    optimal_param, param_convolution = curve_fit(get_expected_intensities_psi_delta, compensator_angles, measured_intensities, p0=initial_guesses, bounds=(bounds[::, 0], bounds[::, 1]), sigma=intensity_uncertainties, method="trf")
-
-    param_err = np.sqrt(np.diag(param_convolution))
-
-    print("Angle: {:.4G} +- {:.4G}\nPsi: {:.4G} +- {:.4G}\nDelta: {:.4G} +- {:.4G}\nOffset: {:.4G} +- {:.4G}".format(optimal_param[0] * 180/np.pi, param_err[0] * 180/np.pi, optimal_param[1] * 180/np.pi, param_err[1] * 180/np.pi, optimal_param[2] * 180/np.pi, param_err[2] * 180/np.pi, optimal_param[3], param_err[3]))
+    # print("amplitude: {:.4G} +- {:.4G}\nangle: {:.4G} +- {:.4G}\nn_gold: {:.4G} +- {:.4G}\nk_gold: {:.4G} +- {:.4G}\nd: {:.4G} +- {:.4G}\nwavelength: {:.4G} +- {:.4G}\noffset: {:.4G} +- {:.4G}".format(optimal_param[0], param_err[0], optimal_param[1] * 180 / np.pi, param_err[1] * 180 / np.pi, optimal_param[2], param_err[2], optimal_param[3], param_err[3], optimal_param[4], param_err[4], optimal_param[5], param_err[5], optimal_param[6], param_err[6]))
 
     return optimal_param, param_err
 
@@ -214,7 +133,7 @@ def fit_from_data(filename):
     data_x, data_y = data[0], data[1]
 
     # TODO Normalise the data
-    data_y = normalise_data(data_y)
+    data_y = normalise_data(data_y) * 0.25
 
     # Format the figure and plot
     format_plot(max(data_y))
@@ -240,9 +159,6 @@ def fit_from_data(filename):
     # # Plot the expected intensities from known values
     # plt.plot(data_x * 180 / np.pi, get_expected_intensities(data_x, 0.3, get_default_brewsters_angle(), 3.5, -0.22, 50e-9, 632e-9, offset=0.007187), ls="-", lw=3, label="Plot")
     # plt.plot(data_x * 180 / np.pi, get_expected_intensities(data_x, 0.3, get_default_brewsters_angle(), 3.5, -0.22, 10e-9, 632e-9, offset=0.007187), ls="-", lw=3, label="Plot")
-
-    # optimal_param, param_err = fit_data_to_expected_psi_delta(data_x, data_y, sigma)
-    # plt.plot(data_x * 180 / np.pi, get_expected_intensities_psi_delta(data_x, *optimal_param), c='k', ls="-", label="Calculated Result")
 
     plt.legend()
     plt.tight_layout()
@@ -320,7 +236,8 @@ def plot_default():
 
 # plot_default()
 
-fit_from_data("data/Gold_B_3")
+# fit_from_data("data/Gold_A_2")
+fit_from_data("data/Gold_B_4_NDF")
 # plot_from_data("data/Gold_B_3")
 # fit_from_data("data/Glass_2")
 

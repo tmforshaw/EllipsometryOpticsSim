@@ -7,8 +7,8 @@ from light_traversal import get_rotated_linear_polariser_matrix, get_rotated_qua
 
 # The default values for known parameters
 def get_default_refractive_index_param():
-    N_air = 1 + 0j
-    N_glass = 1.5 + 0j
+    N_air = get_complex_refractive_index(1, 0)
+    N_glass = get_complex_refractive_index(1.5, 0)
     return (N_air, N_glass)
 
 def get_default_brewsters_angle():
@@ -35,8 +35,11 @@ def get_expected_intensities(compensator_angles, amplitude, sample_angle_of_inci
     # polarisation_mat = get_rotated_linear_polariser_matrix(-polariser_angle)
     # analyser_mat = get_rotated_linear_polariser_matrix(polariser_angle)
 
-    polarisation_mat = get_rotated_linear_polariser_matrix(0)
-    analyser_mat = get_rotated_linear_polariser_matrix(np.pi / 2)
+    # polarisation_mat = get_rotated_linear_polariser_matrix(0)
+    # analyser_mat = get_rotated_linear_polariser_matrix(np.pi / 2)
+
+    polarisation_mat = get_rotated_linear_polariser_matrix(np.pi / 4)
+    analyser_mat = get_rotated_linear_polariser_matrix(0)
 
     # Multiply the Jones' matrices in reverse order to represent the light-ray traversal, then multiply by the field strength vector to apply this combined matrix to it
     final_field_strength = np.array([analyser_mat @ get_rotated_quarter_wave_plate(compensator_angle) @ sample_mat @ polarisation_mat @ original_field_strength for compensator_angle in compensator_angles])# Use @ instead of * to allow for different sized matrices to be dot-producted together
@@ -45,7 +48,11 @@ def get_expected_intensities(compensator_angles, amplitude, sample_angle_of_inci
     # R_effective = (R_paralell + R_perpendicular) / 2
     intensities = np.abs(np.sum(final_field_strength, axis=2).reshape(len(final_field_strength)) / 2) * amplitude + offset 
 
-    # intensities /= max(intensities)
+    # intensities = np.sum(np.abs(final_field_strength) ** 2, axis=2).reshape(len(final_field_strength)) * amplitude + offset 
+
+    # intensities = np.abs(np.linalg.norm(final_field_strength, axis=2).reshape(len(final_field_strength))) * amplitude + offset 
+
+    intensities /= max(intensities)
 
     return intensities
 
@@ -68,15 +75,24 @@ def get_expected_intensities_psi_delta(compensator_angles, sample_angle_of_incid
     # polarisation_mat = get_rotated_linear_polariser_matrix(-polariser_angle)
     # analyser_mat = get_rotated_linear_polariser_matrix(polariser_angle)
 
-    polarisation_mat = get_rotated_linear_polariser_matrix(0)
-    analyser_mat = get_rotated_linear_polariser_matrix(np.pi / 2)
+    # polarisation_mat = get_rotated_linear_polariser_matrix(0)
+    # analyser_mat = get_rotated_linear_polariser_matrix(np.pi / 2)
 
-    # Multiply the Jones' matrices in reverse order to represent the light-ray traversal, then multiply by the field strength vector to apply this combined matrix to it
+    polarisation_mat = get_rotated_linear_polariser_matrix(np.pi /2)
+    analyser_mat = get_rotated_linear_polariser_matrix(0)
+
+    # # Multiply the Jones' matrices in reverse order to represent the light-ray traversal, then multiply by the field strength vector to apply this combined matrix to it
+    # final_field_strength = np.array([analyser_mat @ get_rotated_quarter_wave_plate(compensator_angle - offset) @ sample_mat @ polarisation_mat @ original_field_strength for compensator_angle in compensator_angles])# Use @ instead of * to allow for different sized matrices to be dot-producted together
+
     final_field_strength = np.array([analyser_mat @ get_rotated_quarter_wave_plate(compensator_angle - offset) @ sample_mat @ polarisation_mat @ original_field_strength for compensator_angle in compensator_angles])# Use @ instead of * to allow for different sized matrices to be dot-producted together
 
     # Find the effective reflection and take the absolute value so it's real
     # R_effective = (R_paralell + R_perpendicular) / 2
     intensities = np.abs(np.sum(final_field_strength, axis=2).reshape(len(final_field_strength)) / 2) / np.cos(psi)
+
+    # print(np.linalg.norm(np.abs(final_field_strength), axis=2).flatten(), "\n")
+
+    # intensities = np.linalg.norm(np.abs(final_field_strength), axis=2).flatten() ** 2
 
     intensities /= max(intensities)
     # intensities += offset
@@ -131,8 +147,8 @@ def fit_data_to_expected_psi_delta(compensator_angles, measured_intensities, int
 
     # Bounds for each guess
     angle_bounds = [0, np.pi]
-    psi_bounds = [0, np.pi]
-    delta_bounds = [0, np.pi]
+    psi_bounds = [-np.pi, np.pi]
+    delta_bounds = [-np.pi, np.pi]
     # offset_bounds = [0, 1]
     offset_bounds = [-np.pi, np.pi]
 

@@ -89,26 +89,26 @@ def get_fresnel_thin_film_matrix(theta_incoming, N_air, N_gold, N_glass, d, wave
     T_air_gold_glass_gold_glass_gold_air = (1 - R_air_gold) * R_gold_glass_at_100_percent * R_gold_air_at_100_percent * R_gold_glass_at_100_percent * (1 - R_gold_air_at_100_percent)
 
     # Reflection from air-gold and the transmitted from gold-air
-    # Transmited_Light = R_air_gold + T_gold_air + T_air_gold_glass_gold_glass_gold_air
-    Transmited_Light = R_air_gold + T_gold_air
+    Transmited_Light = R_air_gold + T_gold_air + T_air_gold_glass_gold_glass_gold_air
+    # Transmited_Light = R_air_gold + T_gold_air
     # Transmited_Light = R_air_gold
 
-    psi = np.atan(np.abs(Transmited_Light[0] / Transmited_Light[1]))
+    # psi = np.atan(np.abs(Transmited_Light[0] / Transmited_Light[1]))
 
     # delta = np.angle(Transmited_Light[0] / Transmited_Light[1])
 
     n_gold = np.real(N_gold)
     k_gold = np.imag(N_gold)
 
-    # delta = 4 * np.pi * N_gold / wavelength * d * np.sin(theta_incoming)
+    delta = 4 * np.pi * N_gold / wavelength * d * np.sin(theta_incoming)
     # delta = np.modf(np.abs(2 * np.pi * N_gold / wavelength * d * np.sin(theta_incoming)) / (2 * np.pi))[0] * 2 * np.pi
     # delta = np.abs(4 * np.pi * N_gold / wavelength * d * np.sin(theta_incoming))
     # delta = (4 * np.pi * n_gold / wavelength * d * np.cos(theta_incoming))
-    delta = (4 * np.pi * n_gold * d * np.cos(theta_incoming))
+    # delta = (4 * np.pi * n_gold * d * np.cos(theta_incoming))
 
-    # psi = (n_gold * np.cos(theta_incoming) * np.sqrt(1 - (k_gold ** 2 / (n_gold ** 2 + k_gold ** 2)))) / (np.sqrt(n_gold ** 2 + k_gold ** 2) * np.sqrt(1 - (np.sin(theta_incoming) ** 2 / (n_gold ** 2 + k_gold ** 2))))
+    psi = (n_gold * np.cos(theta_incoming) * np.sqrt(1 - (k_gold ** 2 / (n_gold ** 2 + k_gold ** 2)))) / (np.sqrt(n_gold ** 2 + k_gold ** 2) * np.sqrt(1 - (np.sin(theta_incoming) ** 2 / (n_gold ** 2 + k_gold ** 2))))
 
-    # print("Psi: {:.4G}\tDelta: {:.4G}".format(psi * 180/np.pi, delta *180/np.pi))
+    print("Psi: {:.4G}\tDelta: {:.4G}".format(psi * 180/np.pi, delta *180/np.pi))
 
     #Describe this phase offset and the magnitude in a Jones' matrix
     return get_matrix_from_psi_delta(psi, delta)
@@ -173,7 +173,7 @@ def scattering_matrix(n_au, n_quartz, d_au, d_quartz, ang):
     # Update global scattering matrices
     SA11, SA12, SA21, SA22 = Sref11, Sref12, Sref21, Sref22
     SB11, SB12, SB21, SB22 = Sg11, Sg12, Sg21, Sg22
-    
+
     D = np.linalg.inv(np.eye(2) - SB11 @ SA22) @ SA12
     F = np.linalg.inv(np.eye(2) - SA22 @ SB11) @ SB21
     
@@ -205,7 +205,7 @@ def scattering_matrix(n_au, n_quartz, d_au, d_quartz, ang):
         # Update global scattering matrices
         SA11, SA12, SA21, SA22 = Sg11, Sg12, Sg21, Sg22
         SB11, SB12, SB21, SB22 = S11, S12, S21, S22
-        
+
         D = np.linalg.inv(np.eye(2) - SB11 @ SA22) @ SA12
         F = np.linalg.inv(np.eye(2) - SA22 @ SB11) @ SB21
         
@@ -213,7 +213,7 @@ def scattering_matrix(n_au, n_quartz, d_au, d_quartz, ang):
         Sg12 = D @ SB12
         Sg21 = F @ SA21
         Sg22 = SB22 + F @ SA22 @ SB12
-    
+
     psi = np.arctan(np.abs(Sg11[0, 0] / Sg11[1, 1]))
     delta = np.angle(Sg11[0, 0] / Sg11[1, 1])
 
@@ -225,4 +225,4 @@ def scattering_matrix(n_au, n_quartz, d_au, d_quartz, ang):
 def get_sample_matrix(sample_angle_of_incidence, N_air, N_gold, N_glass, d, wavelength):
     # return get_snell_thin_film_matrix(sample_angle_of_incidence, N_air, N_gold, N_glass, d, wavelength)
     # return get_fresnel_thin_film_matrix(sample_angle_of_incidence, N_air, N_gold, N_glass, d, wavelength)
-    return scattering_matrix(N_gold, N_glass, d, 0.01, sample_angle_of_incidence)
+    return scattering_matrix(N_gold, N_glass, d, 0.015, sample_angle_of_incidence)

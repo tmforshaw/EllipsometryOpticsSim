@@ -100,7 +100,7 @@ def get_fresnel_thin_film_matrix(theta_incoming, N_air, N_gold, N_glass, d, wave
     n_gold = np.real(N_gold)
     k_gold = np.imag(N_gold)
 
-    delta = 4 * np.pi * N_gold / wavelength * d * np.sin(theta_incoming)
+    delta = np.abs(4 * np.pi * N_gold / wavelength * d * np.sin(theta_incoming))
     # delta = np.modf(np.abs(2 * np.pi * N_gold / wavelength * d * np.sin(theta_incoming)) / (2 * np.pi))[0] * 2 * np.pi
     # delta = np.abs(4 * np.pi * N_gold / wavelength * d * np.sin(theta_incoming))
     # delta = (4 * np.pi * n_gold / wavelength * d * np.cos(theta_incoming))
@@ -108,7 +108,7 @@ def get_fresnel_thin_film_matrix(theta_incoming, N_air, N_gold, N_glass, d, wave
 
     psi = (n_gold * np.cos(theta_incoming) * np.sqrt(1 - (k_gold ** 2 / (n_gold ** 2 + k_gold ** 2)))) / (np.sqrt(n_gold ** 2 + k_gold ** 2) * np.sqrt(1 - (np.sin(theta_incoming) ** 2 / (n_gold ** 2 + k_gold ** 2))))
 
-    print("Psi: {:.4G}\tDelta: {:.4G}".format(psi * 180/np.pi, delta *180/np.pi))
+    # print("Psi: {:.4G}\tDelta: {:.4G}".format(psi * 180/np.pi, delta *180/np.pi))
 
     #Describe this phase offset and the magnitude in a Jones' matrix
     return get_matrix_from_psi_delta(psi, delta)
@@ -224,5 +224,5 @@ def scattering_matrix(n_au, n_quartz, d_au, d_quartz, ang):
 # A helper function which can be used to switch out the sample matrix easily
 def get_sample_matrix(sample_angle_of_incidence, N_air, N_gold, N_glass, d, wavelength):
     # return get_snell_thin_film_matrix(sample_angle_of_incidence, N_air, N_gold, N_glass, d, wavelength)
-    # return get_fresnel_thin_film_matrix(sample_angle_of_incidence, N_air, N_gold, N_glass, d, wavelength)
-    return scattering_matrix(N_gold, N_glass, d, 0.015, sample_angle_of_incidence)
+    return get_fresnel_thin_film_matrix(sample_angle_of_incidence, N_air, N_gold, N_glass, d, wavelength)
+    # return scattering_matrix(N_gold, N_glass, d, 0.015, sample_angle_of_incidence)

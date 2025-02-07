@@ -68,17 +68,7 @@ def fit_data_to_expected(compensator_angles, measured_intensities, intensity_unc
     param_err = np.sqrt(np.diag(param_convolution))
 
     # Print out the values, along with their errors
-    # parameter_names = ["Amplitude", "Angle", "N_gold", "K_gold", "d", "Wavelength", "X-Offset", "Y-Offset"]
-    parameter_names = ["Angle", "N_gold", "K_gold", "d", "X-Offset", "Y-Offset"]
-    for i, (name, param, err) in enumerate(zip(parameter_names, optimal_param, param_err)):
-        match i:
-            case(0 | 4):
-                param *= 180/np.pi
-                err *= 180/np.pi
-            
-        print("{}: {:.4G} +- {:.4G}".format(name, param, err))
-
-    # print("amplitude: {:.4G} +- {:.4G}\nangle: {:.4G} +- {:.4G}\nn_gold: {:.4G} +- {:.4G}\nk_gold: {:.4G} +- {:.4G}\nd: {:.4G} +- {:.4G}\nwavelength: {:.4G} +- {:.4G}\noffset: {:.4G} +- {:.4G}".format(optimal_param[0], param_err[0], optimal_param[1] * 180 / np.pi, param_err[1] * 180 / np.pi, optimal_param[2], param_err[2], optimal_param[3], param_err[3], optimal_param[4], param_err[4], optimal_param[5], param_err[5], optimal_param[6], param_err[6]))
+    print_parameters_nicely(optimal_param, param_err, names=["Angle", "N_gold", "K_gold", "d", "X-Offset", "Y-Offset"], units=["Degrees", "", "", "Metres", "Degrees", ""])
 
     return optimal_param, param_err
 
@@ -154,4 +144,3 @@ fit_from_data(["data/Gold_C_45_45"])
 # plot_range_of_wavelengths()
 # plot_range_of_depths()
 # plot_range_of_brewsters()
-# plot_range_of_initial_light()

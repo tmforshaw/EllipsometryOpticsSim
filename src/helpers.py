@@ -62,6 +62,35 @@ def format_plot(y_max):
 def normalise_data(data_y):
     return data_y / max(data_y)
 
+def print_parameters_nicely(values, errors, names, units):
+    # Get the length of the longest name in the list
+    max_name_len = len(max(names, key=len))
+
+    # Adjust specific values to change their units from radians to degrees
+    value_and_errors = list(zip(values, errors))
+    for i, (value, err) in enumerate(value_and_errors):
+        match i:
+            case(0 | 4):
+                value *= 180/np.pi
+                err *= 180/np.pi
+
+                value_and_errors[i] = value, err
+
+    # Create an array for the values and their associated errors
+    value_err_strings = ["{:.4G} +- {:.4G}".format(value, err) for value, err in value_and_errors]
+    max_value_err_len = len(max(value_err_strings, key=len))
+
+    # Print out the (nicely spaced) names, values, errors, and units
+    for i in range(len(value_and_errors)):
+        # Pad the values, using escaped curly brackets "{{}}" so that the next format still works
+        padded_string = "{{{{}}}}: {{:<{}}}{{{{}}}}{{:<{}}}[{{{{}}}}]".format(max_name_len - len(names[i]) + 2, max_value_err_len - len(value_err_strings[i]) + 2).format("","")
+
+        print(padded_string.format(names[i], value_err_strings[i], units[i]))
+
+# -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# Plotting functions to plot default parameters, varying only one -------------------------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
 def plot_range_of_wavelengths():
     wavelengths = np.linspace(250e-9, 900e-9, num=15)
     param, _ = get_guesses_and_bounds()
@@ -94,17 +123,6 @@ def plot_range_of_brewsters():
     for brewster in brewsters:
         x = np.linspace(-np.pi/2, np.pi/2, num=300, endpoint=True)
         plt.plot(x * 180 / np.pi, get_expected_intensities(x, param[0], brewster, param[2], param[3], param[4], param[5]), ls="-", lw=3, label=r"$\theta_B = {:.4G}$".format(brewster))
-
-    plt.legend()
-    plt.tight_layout()
-    plt.show()
-
-def plot_range_of_initial_light():
-    param, _ = get_guesses_and_bounds()
-    lights = np.array([[1, 0], [0, 1], [1 / np.sqrt(2),1 / np.sqrt(2)], [0.6, 0.8], [2, 0], [1, 1]])
-
-    x = np.linspace(0, np.pi * 2, num=300, endpoint=True)
-    [plt.plot(x * 180 / np.pi, get_expected_intensities(x, param[0], param[1], param[2], param[3], param[4], param[5], param[6], light), ls="-", lw=3, label="{}".format(light)) for light in lights]
 
     plt.legend()
     plt.tight_layout()

@@ -7,17 +7,16 @@ from light_traversal import get_rotated_linear_polariser_matrix, get_rotated_qua
 from helpers import *
 
 # Calculates the expected intensity of the light, for a range of compensator angles, using the Jones' matrix ray transfer method
-def get_expected_intensities(compensator_angles, amplitude, sample_angle_of_incidence, n_gold, k_gold, d, wavelength, offset = 0, original_field_strength = None):
+def get_expected_intensities(compensator_angles, sample_angle_of_incidence, n_gold, k_gold, d, x_offset = 0, y_offset = 0):
     # Get the default parameters for this traversal
     N_air, N_glass = get_default_refractive_index_param()
 
     # Turn the n_gold and k_gold into a complex refractive index
     N_gold = get_complex_refractive_index(n_gold, k_gold)
 
-    if original_field_strength is None:
-        original_field_strength = np.array([1, 0]) # Parallel Linearly-Polarised Light
+    original_field_strength = np.array([1, 0]) # Parallel Linearly-Polarised Light
 
-    sample_mat = get_sample_matrix(sample_angle_of_incidence, N_air, N_gold, N_glass, d, wavelength)
+    sample_mat = get_sample_matrix(sample_angle_of_incidence, N_air, N_gold, N_glass, d, 632.8e-9)
 
     # polarisation_mat = get_rotated_linear_polariser_matrix(0)
     # analyser_mat = get_rotated_linear_polariser_matrix(np.pi / 2)
@@ -26,13 +25,13 @@ def get_expected_intensities(compensator_angles, amplitude, sample_angle_of_inci
     analyser_mat = get_rotated_linear_polariser_matrix(np.pi / 4)
 
     # Multiply the Jones' matrices in reverse order to represent the light-ray traversal, then multiply by the field strength vector to apply this combined matrix to it
-    final_field_strength = np.array([analyser_mat @ get_rotated_quarter_wave_plate(compensator_angle) @ sample_mat @ polarisation_mat @ original_field_strength for compensator_angle in compensator_angles])# Use @ instead of * to allow for different sized matrices to be dot-producted together
+    final_field_strength = np.array([analyser_mat @ get_rotated_quarter_wave_plate(compensator_angle - x_offset) @ sample_mat @ polarisation_mat @ original_field_strength for compensator_angle in compensator_angles])# Use @ instead of * to allow for different sized matrices to be dot-producted together
 
     # Find the effective reflection and take the absolute value so it's real
     # R_effective = (R_paralell + R_perpendicular) / 2
     # intensities = np.abs(np.sum(final_field_strength, axis=2).reshape(len(final_field_strength)) / 2) * amplitude + offset 
 
-    intensities = np.sum(np.abs(final_field_strength) ** 2, axis=2).reshape(len(final_field_strength)) + offset
+    intensities = np.sum(np.abs(final_field_strength) ** 2, axis=2).reshape(len(final_field_strength)) + y_offset
 
     intensities /= max(intensities)
 
@@ -40,20 +39,20 @@ def get_expected_intensities(compensator_angles, amplitude, sample_angle_of_inci
 
 def get_guesses_and_bounds():
     # Initial guesses and bounds for parameters
-    amplitude_guess,  amplitude_bounds  = 1,                             [0.001, 1]
+    # amplitude_guess,  amplitude_bounds  = 1,                             [0.001, 1]
     n_angle_guess,    n_angle_bounds    = get_default_brewsters_angle(), [50 * np.pi/180, 60 * np.pi / 180]
     n_gold_guess,     n_gold_bounds     = 0.19404,                       [0, 5]
     k_gold_guess,     k_gold_bounds     = 3.5934,                        [-1, 5]
     d_guess,          d_bounds          = 40e-9,                         [10e-9, 100e-9]
-    wavelength_guess, wavelength_bounds = 632.8e-9,                      [600e-9, 700e-9]
-    offset_guess,     offset_bounds     = 0,                             [0, 1]
-    # offset_guess,     offset_bounds     = 0,                             [0, np.pi]
+    # wavelength_guess, wavelength_bounds = 632.8e-9,                      [600e-9, 700e-9]
+    x_offset_guess,     x_offset_bounds     = 0,                             [-np.pi/8, np.pi/8]
+    y_offset_guess,     y_offset_bounds     = 0,                             [0, 1]
 
     # Combine initial guesses into single array
-    initial_guesses = [amplitude_guess, n_angle_guess, n_gold_guess, k_gold_guess, d_guess, wavelength_guess, offset_guess]
+    initial_guesses = [n_angle_guess, n_gold_guess, k_gold_guess, d_guess, x_offset_guess, y_offset_guess]
 
     # Combine bounds into single array
-    bounds = np.array([amplitude_bounds, n_angle_bounds, n_gold_bounds, k_gold_bounds, d_bounds, wavelength_bounds, offset_bounds])
+    bounds = np.array([n_angle_bounds, n_gold_bounds, k_gold_bounds, d_bounds, x_offset_bounds, y_offset_bounds])
 
     return initial_guesses, bounds
 
@@ -69,10 +68,11 @@ def fit_data_to_expected(compensator_angles, measured_intensities, intensity_unc
     param_err = np.sqrt(np.diag(param_convolution))
 
     # Print out the values, along with their errors
-    parameter_names = ["Amplitude", "Angle", "N_gold", "K_gold", "d", "Wavelength", "Offset"]
+    # parameter_names = ["Amplitude", "Angle", "N_gold", "K_gold", "d", "Wavelength", "X-Offset", "Y-Offset"]
+    parameter_names = ["Angle", "N_gold", "K_gold", "d", "X-Offset", "Y-Offset"]
     for i, (name, param, err) in enumerate(zip(parameter_names, optimal_param, param_err)):
         match i:
-            case(1):
+            case(0 | 4):
                 param *= 180/np.pi
                 err *= 180/np.pi
             

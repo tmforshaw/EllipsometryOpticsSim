@@ -38,9 +38,6 @@ def get_expected_intensities(compensator_angles, amplitude, sample_angle_of_inci
     polarisation_mat = get_rotated_linear_polariser_matrix(-np.pi/4)
     analyser_mat = get_rotated_linear_polariser_matrix(np.pi / 4)
 
-    # polarisation_mat = get_rotated_linear_polariser_matrix(np.pi/4)
-    # analyser_mat = get_rotated_linear_polariser_matrix(-np.pi / 4)
-
     # Multiply the Jones' matrices in reverse order to represent the light-ray traversal, then multiply by the field strength vector to apply this combined matrix to it
     final_field_strength = np.array([analyser_mat @ get_rotated_quarter_wave_plate(compensator_angle) @ sample_mat @ polarisation_mat @ original_field_strength for compensator_angle in compensator_angles])# Use @ instead of * to allow for different sized matrices to be dot-producted together
 
@@ -134,6 +131,12 @@ def format_plot(y_max):
 
     # # Remove the margins around the data
     # plt.margins(x=0, y=y_max / 50, tight=True)
+    plt.margins(x=0, tight=True)
+
+    # Set the title and axes labels for this plot
+    plt.title(r"Light Intensity $\left(\frac{I}{I_{max}}\right)$ vs Compensator Angle")
+    plt.xlabel("Compensator Angle [Degrees]")
+    plt.ylabel(r"Normalised Light Intensity ($I \div I_{max}$)")
 
 def normalise_data(data_y):
     return data_y / max(data_y)
@@ -150,34 +153,24 @@ def fit_from_data(filenames):
         # TODO Normalise the data
         data_y = normalise_data(data_y)
 
-        # data_y /= np.linalg.norm(np.column_stack((data_x, data_y)), axis=1)
-
-        # data_y /= np.linalg.norm(data_y)
-
         # Format the figure and plot
         format_plot(max(data_y))
 
-        # Set the title and axes labels for this plot
-        plt.title(r"Light Intensity $\left(\frac{I_{Final}}{I_{Initial}}\right)$ vs Compensator Angle")
-        plt.xlabel("Compensator Angle [Degrees]")
-        plt.ylabel(r"Normalised Light Intensity ($I_{final} \div I_{initial}$)")
+        # A modifier to add the filenamae if there are multiple files
+        label_modifier = " {}".format(filename) if len(filenames) > 1 else ""
 
         # Uncertainty in the y-data
-        sigma_absolute = 0.05 * max(data_y)
-        sigma = np.array([sigma_absolute for _ in data_y])
+        sigma_percent = 0.02 
+        sigma = data_y * sigma_percent
 
         # Fit the data to the function
         optimal_param, param_err = fit_data_to_expected(data_x, data_y, sigma)
-        plt.plot(data_x * 180 / np.pi, get_expected_intensities(data_x, *optimal_param), c='k', ls="-", label="Calculated Result") # Plot the light intensity expected for the fitted parameters
+        plt.plot(data_x * 180 / np.pi, get_expected_intensities(data_x, *optimal_param), c='k', ls="-", label="Calculated Result{}".format(label_modifier)) # Plot the light intensity expected for the fitted parameters
 
         # Plot the measured data to the same figure
         # plt.errorbar(data_x * 180 / np.pi, data_y, c='r', alpha=0.2, yerr=sigma, fmt='o', label="Intensity Data")
-        plt.scatter(data_x * 180 / np.pi, data_y, c='r', label="Intensity Data", lw=4)
-        # plt.fill_between(data_x * 180 / np.pi, data_y - sigma, data_y + sigma, color="r", alpha=0.2, label="Errors on Intensity Data")
-
-        # # Plot the expected intensities from known values
-        # plt.plot(data_x * 180 / np.pi, get_expected_intensities(data_x, 0.3, get_default_brewsters_angle(), 3.5, -0.22, 50e-9, 632e-9, offset=0.007187), ls="-", lw=3, label="Plot")
-        # plt.plot(data_x * 180 / np.pi, get_expected_intensities(data_x, 0.3, get_default_brewsters_angle(), 3.5, -0.22, 10e-9, 632e-9, offset=0.007187), ls="-", lw=3, label="Plot")
+        plt.scatter(data_x * 180 / np.pi, data_y, c='r', label="Intensity Data{}".format(label_modifier), lw=4)
+        plt.fill_between(data_x * 180 / np.pi, data_y - sigma, data_y + sigma, color="r", alpha=0.2, label="Errors on Intensity Data")
 
     plt.legend()
     plt.tight_layout()
@@ -194,13 +187,11 @@ def plot_from_data(filenames):
         # Format the figure and plot
         format_plot(max(data_y))
 
-        # Set the title and axes labels for this plot
-        plt.title(r"Light Intensity $\left(\frac{I_{Final}}{I_{Initial}}\right)$ vs Compensator Angle")
-        plt.xlabel("Compensator Angle [Degrees]")
-        plt.ylabel(r"Normalised Light Intensity ($I_{final} \div I_{initial}$)")
+        # A modifier to add the filenamae if there are multiple files
+        label_modifier = " {}".format(filename) if len(filenames) > 1 else ""
 
         # Plot the measured data to the same figure
-        plt.scatter(data_x * 180 / np.pi, data_y, c='r', label="Intensity Data")
+        plt.scatter(data_x * 180 / np.pi, data_y, c='r', label="Intensity Data{}".format(label_modifier))
 
     plt.legend()
     plt.tight_layout()
@@ -275,8 +266,7 @@ def plot_default():
 
 # fit_from_data(["data/Gold_C_1"])
 
-plot_from_data(["data/Gold_C_45_45"])
-# fit_from_data(["data/Gold_C_45_45"])
+fit_from_data(["data/Gold_C_45_45"])
 
 # plot_range_of_wavelengths()
 # plot_range_of_depths()

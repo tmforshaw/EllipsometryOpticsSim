@@ -75,6 +75,9 @@ def fresnel_reflection(theta_incoming, N1, N2, wavelength):
     R_parallel = np.abs((N1 * np.cos(theta_refracted) - N2 * np.cos(theta_incoming)) / (N1 * np.cos(theta_refracted) + N2 * np.cos(theta_incoming))) ** 2
     R_perpendicular = np.abs((N1 * np.cos(theta_incoming) - N2 * np.cos(theta_refracted)) / (N1 * np.cos(theta_incoming) + N2 * np.cos(theta_refracted))) ** 2
 
+    # R_parallel = (N1 * np.cos(theta_refracted) - N2 * np.cos(theta_incoming)) / (N1 * np.cos(theta_refracted) + N2 * np.cos(theta_incoming)) ** 2
+    # R_perpendicular = (N1 * np.cos(theta_incoming) - N2 * np.cos(theta_refracted)) / (N1 * np.cos(theta_incoming) + N2 * np.cos(theta_refracted)) ** 2
+
     return np.array([R_parallel, R_perpendicular])
 
 # A thin film matrix which uses the fresnel equations
@@ -93,27 +96,57 @@ def get_fresnel_thin_film_matrix(theta_incoming, N_air, N_gold, N_glass, d, wave
     # Transmited_Light = R_air_gold + T_gold_air
     # Transmited_Light = R_air_gold
 
-    # psi = np.atan(np.abs(Transmited_Light[0] / Transmited_Light[1]))
+    psi = np.atan(np.abs(Transmited_Light[0] / Transmited_Light[1]))
 
     # delta = np.angle(Transmited_Light[0] / Transmited_Light[1])
 
     n_gold = np.real(N_gold)
     k_gold = np.imag(N_gold)
 
-    delta = np.abs(4 * np.pi * N_gold / wavelength * d * np.sin(theta_incoming))
-    # delta = np.modf(np.abs(2 * np.pi * N_gold / wavelength * d * np.sin(theta_incoming)) / (2 * np.pi))[0] * 2 * np.pi
+    delta = 4 * np.pi * N_gold / wavelength * d * np.sin(theta_incoming)
     # delta = np.abs(4 * np.pi * N_gold / wavelength * d * np.sin(theta_incoming))
-    # delta = (4 * np.pi * n_gold / wavelength * d * np.cos(theta_incoming))
-    # delta = (4 * np.pi * n_gold * d * np.cos(theta_incoming))
 
-    psi = (n_gold * np.cos(theta_incoming) * np.sqrt(1 - (k_gold ** 2 / (n_gold ** 2 + k_gold ** 2)))) / (np.sqrt(n_gold ** 2 + k_gold ** 2) * np.sqrt(1 - (np.sin(theta_incoming) ** 2 / (n_gold ** 2 + k_gold ** 2))))
+    # psi = (n_gold * np.cos(theta_incoming) * np.sqrt(1 - (k_gold ** 2 / (n_gold ** 2 + k_gold ** 2)))) / (np.sqrt(n_gold ** 2 + k_gold ** 2) * np.sqrt(1 - (np.sin(theta_incoming) ** 2 / (n_gold ** 2 + k_gold ** 2))))
 
     # print("Psi: {:.4G}\tDelta: {:.4G}".format(psi * 180/np.pi, delta *180/np.pi))
 
     #Describe this phase offset and the magnitude in a Jones' matrix
     return get_matrix_from_psi_delta(psi, delta)
 
-def scattering_matrix(n_au, n_quartz, d_au, d_quartz, ang):
+# The Thin Film Matrix used by the 2023 paper
+def thin_film_matrix_2023( wavelength , angle , n1 , k1 , n2 , k2 , d ) :
+    import cmath
+    N1 = complex ( n1 , k1 ) #D e f i n e Gold r e f r a c t i v e i n d e x v a r i a b l e s
+    N2 = complex ( n2 , k2 ) #D e f i n e G l a s s r e f r a c t i v e i n d e x v a r i a b l e s
+
+    beta = 2 * np.pi * ( d / wavelength ) * cmath.sqrt(N1**2 - np.sin(angle)**2)
+
+    # define components to build the coefficient of reflection for s-polarised and p-polarised formulas
+    c_t_0 = np.cos(angle)
+    c_t_1 = cmath.sqrt((1-(1/N1**2))*np.sin(angle)**2)
+    c_t_2 = cmath.sqrt((1-(1/N2**2))*np.sin(angle)**2)
+
+    r01p = (N1* c_t_0 - c_t_1 ) / (N1* c_t_0 + c_t_1 )
+    r01s= ( c_t_0 - N1* c_t_1 ) / ( c_t_0 + N1* c_t_1 )
+    r12p = (N2* c_t_1 - N1* c_t_2 ) / (N2* c_t_1 + N1* c_t_2 )
+    r12s= (N1* c_t_1 - N2* c_t_2 ) / (N1* c_t_1 + N2* c_t_2 )
+
+    # Coeff of reflection for p and s-polarised light
+    Rp = ( r01p + r12p * np.exp(-1j * 2 * beta ) ) / ( 1 + r01p * r12p* np.exp(-1j * 2 * beta ) )
+    Rs=(r01s+r12s*np.exp(-1j*2*beta))/(1+r01s*r12s*np.exp(-1j*2*beta))
+
+    # calculate psi and delta from Rs and Rp
+    psi=(np.pi-np.arctan2(np.abs(Rp),np.abs(Rs)))
+    delta=(np.pi-np.arctan2(np.imag(Rp/Rs),np.real(Rp/Rs)))
+
+    # print("Psi: {:.4G}\nDelta: {:.4G}".format(psi * 180/np.pi, delta* 180/np.pi))
+
+    # Build Jones matrix for reflected light using psi and delta
+    J_g=np.array([[np.sin(psi)*np.exp(1j*delta),0.0],[0.0,np.cos(psi)]])
+
+    return J_g
+
+def rihan_scattering_matrix(n_au, n_quartz, d_au, d_quartz, ang):
     from scipy.linalg import expm
     
     # Simulation parameters
@@ -224,5 +257,6 @@ def scattering_matrix(n_au, n_quartz, d_au, d_quartz, ang):
 # A helper function which can be used to switch out the sample matrix easily
 def get_sample_matrix(sample_angle_of_incidence, N_air, N_gold, N_glass, d, wavelength):
     # return get_snell_thin_film_matrix(sample_angle_of_incidence, N_air, N_gold, N_glass, d, wavelength)
-    return get_fresnel_thin_film_matrix(sample_angle_of_incidence, N_air, N_gold, N_glass, d, wavelength)
-    # return scattering_matrix(N_gold, N_glass, d, 0.015, sample_angle_of_incidence)
+    # return get_fresnel_thin_film_matrix(sample_angle_of_incidence, N_air, N_gold, N_glass, d, wavelength)
+    # return thin_film_matrix_2023(wavelength, sample_angle_of_incidence, np.real(N_gold), np.imag(N_gold), np.real(N_glass), np.imag(N_glass), d)
+    return rihan_scattering_matrix(N_gold, N_glass, d, 0.02, sample_angle_of_incidence)

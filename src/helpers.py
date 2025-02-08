@@ -154,3 +154,14 @@ def plot_default():
     plt.legend()
     plt.tight_layout()
     plt.show()
+
+def run_multiple_matrix_functions(filenames, function_range = range(4)):
+    global SAMPLE_MATRIX_FUNCTION
+
+    for i in function_range:
+        # Update global variable to change matrix function used to calculate
+        SAMPLE_MATRIX_FUNCTION = i
+
+        print_sample_matrix_type(i)
+        fit_from_data(filenames)
+        print()

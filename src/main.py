@@ -151,4 +151,17 @@ def main():
     # plot_range_of_depths()
     # plot_range_of_brewsters()
 
-main()
+# main()
+
+def run_multiple_matrix_functions(filenames, function_range = range(4)):
+    global SAMPLE_MATRIX_FUNCTION
+
+    for i in function_range:
+        # Update global variable to change matrix function used to calculate
+        SAMPLE_MATRIX_FUNCTION = i
+
+        print_sample_matrix_type(i)
+        fit_from_data(filenames)
+        print()
+
+run_multiple_matrix_functions(["data/Gold_C_Best_Angle"], [1,3])

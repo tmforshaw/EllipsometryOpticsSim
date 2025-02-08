@@ -96,7 +96,7 @@ def get_fresnel_thin_film_matrix(theta_incoming, N_air, N_gold, N_glass, d, wave
     # Transmited_Light = R_air_gold + T_gold_air
     # Transmited_Light = R_air_gold
 
-    psi = np.atan(np.abs(Transmited_Light[0] / Transmited_Light[1]))
+    # psi = np.atan(np.abs(Transmited_Light[0] / Transmited_Light[1]))
 
     # delta = np.angle(Transmited_Light[0] / Transmited_Light[1])
 
@@ -106,7 +106,7 @@ def get_fresnel_thin_film_matrix(theta_incoming, N_air, N_gold, N_glass, d, wave
     delta = 4 * np.pi * N_gold / wavelength * d * np.sin(theta_incoming)
     # delta = np.abs(4 * np.pi * N_gold / wavelength * d * np.sin(theta_incoming))
 
-    # psi = (n_gold * np.cos(theta_incoming) * np.sqrt(1 - (k_gold ** 2 / (n_gold ** 2 + k_gold ** 2)))) / (np.sqrt(n_gold ** 2 + k_gold ** 2) * np.sqrt(1 - (np.sin(theta_incoming) ** 2 / (n_gold ** 2 + k_gold ** 2))))
+    psi = (n_gold * np.cos(theta_incoming) * np.sqrt(1 - (k_gold ** 2 / (n_gold ** 2 + k_gold ** 2)))) / (np.sqrt(n_gold ** 2 + k_gold ** 2) * np.sqrt(1 - (np.sin(theta_incoming) ** 2 / (n_gold ** 2 + k_gold ** 2))))
 
     # print("Psi: {:.4G}\tDelta: {:.4G}".format(psi * 180/np.pi, delta *180/np.pi))
 
@@ -255,8 +255,16 @@ def rihan_scattering_matrix(n_au, n_quartz, d_au, d_quartz, ang):
     return get_matrix_from_psi_delta(psi, delta)
 
 # A helper function which can be used to switch out the sample matrix easily
-def get_sample_matrix(sample_angle_of_incidence, N_air, N_gold, N_glass, d, wavelength):
-    # return get_snell_thin_film_matrix(sample_angle_of_incidence, N_air, N_gold, N_glass, d, wavelength)
-    # return get_fresnel_thin_film_matrix(sample_angle_of_incidence, N_air, N_gold, N_glass, d, wavelength)
-    # return thin_film_matrix_2023(wavelength, sample_angle_of_incidence, np.real(N_gold), np.imag(N_gold), np.real(N_glass), np.imag(N_glass), d)
-    return rihan_scattering_matrix(N_gold, N_glass, d, 0.02, sample_angle_of_incidence)
+def get_sample_matrix(sample_angle_of_incidence, N_air, N_gold, N_glass, d, wavelength, sample_matrix_type):
+    match sample_matrix_type:
+        case 0:
+            return get_snell_thin_film_matrix(sample_angle_of_incidence, N_air, N_gold, N_glass, d, wavelength)
+        case 1:
+            return get_fresnel_thin_film_matrix(sample_angle_of_incidence, N_air, N_gold, N_glass, d, wavelength)
+        case 2:
+            return thin_film_matrix_2023(wavelength, sample_angle_of_incidence, np.real(N_gold), np.imag(N_gold), np.real(N_glass), np.imag(N_glass), d)
+        case 3:
+            return rihan_scattering_matrix(N_gold, N_glass, d, 0.02, sample_angle_of_incidence)
+        case _:
+            print("Unknown matrix type used")
+            return np.identity(2)

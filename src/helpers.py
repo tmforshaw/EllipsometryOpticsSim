@@ -62,6 +62,23 @@ def format_plot(y_max):
 def normalise_data(data_y):
     return data_y / max(data_y)
 
+def print_sample_matrix_type(type):
+    match type:
+        case 0:
+            type_string = "Snell's Law"
+        case 1:
+            type_string = "Fresnel"
+        case 2:
+            type_string = "2023"
+        case 3:
+            type_string = "Rihan's"
+        case _:
+            type_string = "Unknown"
+
+
+    spacing_str = "{:-<8}".format("")
+    print(f"{spacing_str}# Using {type_string} Matrix #{spacing_str}")
+
 def print_parameters_nicely(values, errors, names, units):
     # Get the length of the longest name in the list
     max_name_len = len(max(names, key=len))

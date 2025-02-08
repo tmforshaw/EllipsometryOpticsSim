@@ -6,6 +6,9 @@ from scipy.optimize import curve_fit
 from light_traversal import get_rotated_linear_polariser_matrix, get_rotated_quarter_wave_plate, get_sample_matrix
 from helpers import *
 
+# Select the matrix to use for the sample
+SAMPLE_MATRIX_FUNCTION = 1 
+
 # Calculates the expected intensity of the light, for a range of compensator angles, using the Jones' matrix ray transfer method
 def get_expected_intensities(compensator_angles, sample_angle_of_incidence, n_gold, k_gold, d, x_offset = 0, y_offset = 0):
     # Get the default parameters for this traversal
@@ -16,7 +19,7 @@ def get_expected_intensities(compensator_angles, sample_angle_of_incidence, n_go
 
     original_field_strength = np.array([1, 0]) # Parallel Linearly-Polarised Light
 
-    sample_mat = get_sample_matrix(sample_angle_of_incidence, N_air, N_gold, N_glass, d, 632.8e-9)
+    sample_mat = get_sample_matrix(sample_angle_of_incidence, N_air, N_gold, N_glass, d, 632.8e-9, SAMPLE_MATRIX_FUNCTION)
 
     # polarisation_mat = get_rotated_linear_polariser_matrix(0)
     # analyser_mat = get_rotated_linear_polariser_matrix(np.pi / 2)
@@ -128,19 +131,24 @@ def plot_from_data(filenames):
     plt.tight_layout()
     plt.show()
 
-# plot_default()
+def main():
+    print_sample_matrix_type(SAMPLE_MATRIX_FUNCTION)
 
-# fit_from_data(["data/Gold_A_1"])
-# fit_from_data(["data/Gold_B_4_NDF"])
+    # plot_default()
 
-# fit_from_data(["data/Gold_B_5_NDF"])
-# fit_from_data(["data/Gold_B_5_NDF", "data/Gold_B_6_NDF_Amp"])
-# fit_from_data(["data/Gold_B_6_NDF_Amp"])
+    # fit_from_data(["data/Gold_A_1"])
+    # fit_from_data(["data/Gold_B_4_NDF"])
 
-# fit_from_data(["data/Gold_C_1"])
+    # fit_from_data(["data/Gold_B_5_NDF"])
+    # fit_from_data(["data/Gold_B_5_NDF", "data/Gold_B_6_NDF_Amp"])
+    # fit_from_data(["data/Gold_B_6_NDF_Amp"])
 
-fit_from_data(["data/Gold_C_45_45"])
+    # fit_from_data(["data/Gold_C_1"])
 
-# plot_range_of_wavelengths()
-# plot_range_of_depths()
-# plot_range_of_brewsters()
+    fit_from_data(["data/Gold_C_45_45"])
+
+    # plot_range_of_wavelengths()
+    # plot_range_of_depths()
+    # plot_range_of_brewsters()
+
+main()

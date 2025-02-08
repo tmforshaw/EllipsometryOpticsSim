@@ -96,17 +96,16 @@ def get_fresnel_thin_film_matrix(theta_incoming, N_air, N_gold, N_glass, d, wave
     # Transmited_Light = R_air_gold + T_gold_air
     # Transmited_Light = R_air_gold
 
-    # psi = np.atan(np.abs(Transmited_Light[0] / Transmited_Light[1]))
+    psi = np.atan(np.abs(Transmited_Light[0] / Transmited_Light[1]))
 
     # delta = np.angle(Transmited_Light[0] / Transmited_Light[1])
 
-    n_gold = np.real(N_gold)
-    k_gold = np.imag(N_gold)
+    delta = np.abs(4 * np.pi * N_gold / wavelength * d * np.sin(theta_incoming))
+    # delta = 4 * np.pi * N_gold / wavelength * d * np.sin(theta_incoming)
 
-    delta = 4 * np.pi * N_gold / wavelength * d * np.sin(theta_incoming)
-    # delta = np.abs(4 * np.pi * N_gold / wavelength * d * np.sin(theta_incoming))
-
-    psi = (n_gold * np.cos(theta_incoming) * np.sqrt(1 - (k_gold ** 2 / (n_gold ** 2 + k_gold ** 2)))) / (np.sqrt(n_gold ** 2 + k_gold ** 2) * np.sqrt(1 - (np.sin(theta_incoming) ** 2 / (n_gold ** 2 + k_gold ** 2))))
+    # n_gold = np.real(N_gold)
+    # k_gold = np.imag(N_gold)
+    # psi = (n_gold * np.cos(theta_incoming) * np.sqrt(1 - (k_gold ** 2 / (n_gold ** 2 + k_gold ** 2)))) / (np.sqrt(n_gold ** 2 + k_gold ** 2) * np.sqrt(1 - (np.sin(theta_incoming) ** 2 / (n_gold ** 2 + k_gold ** 2))))
 
     # print("Psi: {:.4G}\tDelta: {:.4G}".format(psi * 180/np.pi, delta *180/np.pi))
 

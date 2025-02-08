@@ -108,44 +108,51 @@ def print_parameters_nicely(values, errors, names, units):
 # Plotting functions to plot default parameters, varying only one -------------------------------------------------------------------------------------------------------------------------------------
 # -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-def plot_range_of_wavelengths():
-    wavelengths = np.linspace(250e-9, 900e-9, num=15)
-    param, _ = get_guesses_and_bounds()
+# def plot_range_of_wavelengths():
+#     from main import get_expected_intensities, get_guesses_and_bounds
 
-    for wavelength in wavelengths:
-        x = np.linspace(-np.pi/2, np.pi/2, num=300, endpoint=True)
-        plt.plot(x * 180 / np.pi, get_expected_intensities(x, param[0], param[1], param[2], param[3], param[4], wavelength), ls="-", label=r"$\lambda = {:.4G}$".format(wavelength))
+#     wavelengths = np.linspace(250e-9, 900e-9, num=15)
+#     param, _ = get_guesses_and_bounds()
 
-    plt.legend()
-    plt.tight_layout()
-    plt.show()
+#     for wavelength in wavelengths:
+#         x = np.linspace(-np.pi/2, np.pi/2, num=300, endpoint=True)
+#         plt.plot(x * 180 / np.pi, get_expected_intensities(x, param[0], param[1], param[2], param[3], param[4], wavelength), ls="-", label=r"$\lambda = {:.4G}$".format(wavelength))
+
+#     plt.legend()
+#     plt.tight_layout()
+#     plt.show()
 
 def plot_range_of_depths():
-    depths = np.linspace(0.1e-9, 100e-9, num=15)
+    from main import get_expected_intensities, get_guesses_and_bounds
+
+    depths = np.linspace(30e-9, 50e-9, num=15, endpoint=True)
     param, _ = get_guesses_and_bounds()
 
     for depth in depths:
         x = np.linspace(-np.pi/2, np.pi/2, num=300, endpoint=True)
-        plt.plot(x * 180 / np.pi, get_expected_intensities(x, param[0], param[1], param[2], param[3], depth, param[5]), ls="-", lw=3, label="$d = {:.4G}$".format(depth))
+        plt.plot(x * 180 / np.pi, get_expected_intensities(x, param[0], param[1], param[2], depth), ls="-", lw=3, label="$d = {:.4G}$".format(depth))
 
     plt.legend()
     plt.tight_layout()
     plt.show()
 
 def plot_range_of_brewsters():
-    N = 15
-    brewsters = np.linspace(np.pi/N, np.pi, num=N, endpoint=True)
+    from main import get_expected_intensities, get_guesses_and_bounds
+
+    brewsters = np.linspace(30 * np.pi/180, 60 * np.pi/180, num=15, endpoint=True)
     param, _ = get_guesses_and_bounds()
 
     for brewster in brewsters:
         x = np.linspace(-np.pi/2, np.pi/2, num=300, endpoint=True)
-        plt.plot(x * 180 / np.pi, get_expected_intensities(x, param[0], brewster, param[2], param[3], param[4], param[5]), ls="-", lw=3, label=r"$\theta_B = {:.4G}$".format(brewster))
+        plt.plot(x * 180 / np.pi, get_expected_intensities(x, brewster, param[1], param[2], param[3]), ls="-", lw=3, label=r"$\theta_B = {:.4G}$".format(brewster))
 
     plt.legend()
     plt.tight_layout()
     plt.show()
 
 def plot_default():
+    from main import get_expected_intensities, get_guesses_and_bounds
+
     param, _ = get_guesses_and_bounds()
 
     x = np.linspace(0, np.pi * 2, num=300, endpoint=True)
@@ -154,14 +161,3 @@ def plot_default():
     plt.legend()
     plt.tight_layout()
     plt.show()
-
-def run_multiple_matrix_functions(filenames, function_range = range(4)):
-    global SAMPLE_MATRIX_FUNCTION
-
-    for i in function_range:
-        # Update global variable to change matrix function used to calculate
-        SAMPLE_MATRIX_FUNCTION = i
-
-        print_sample_matrix_type(i)
-        fit_from_data(filenames)
-        print()

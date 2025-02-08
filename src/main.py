@@ -40,10 +40,13 @@ def get_expected_intensities(compensator_angles, sample_angle_of_incidence, n_go
 
     return intensities
 
+# Define the initial guesses and bounds for the fitting
 def get_guesses_and_bounds():
     # Initial guesses and bounds for parameters
     # amplitude_guess,  amplitude_bounds  = 1,                             [0.001, 1]
     n_angle_guess,    n_angle_bounds    = get_default_brewsters_angle(), [50 * np.pi/180, 60 * np.pi / 180]
+    # n_gold_guess,     n_gold_bounds     = 4.652,                       [0, 5]
+    # k_gold_guess,     k_gold_bounds     = -0.5776,                        [-1, 5]
     n_gold_guess,     n_gold_bounds     = 0.19404,                       [0, 5]
     k_gold_guess,     k_gold_bounds     = 3.5934,                        [-1, 5]
     d_guess,          d_bounds          = 40e-9,                         [10e-9, 100e-9]
@@ -145,12 +148,23 @@ def main():
 
     # fit_from_data(["data/Gold_C_1"])
 
-    fit_from_data(["data/Gold_C_45_45"])
+    # fit_from_data(["data/Gold_C_45_45"])
 
-    # plot_range_of_wavelengths()
     # plot_range_of_depths()
-    # plot_range_of_brewsters()
+    plot_range_of_brewsters()
 
-# main()
+def run_multiple_matrix_functions(filenames, function_range = range(4)):
+    global SAMPLE_MATRIX_FUNCTION
 
-run_multiple_matrix_functions(["data/Gold_C_Best_Angle"], [1,3])
+    for i in function_range:
+        # Update global variable to change matrix function used to calculate
+        SAMPLE_MATRIX_FUNCTION = i
+
+        print_sample_matrix_type(i)
+        fit_from_data(filenames)
+        print()
+
+if __name__ == "__main__":
+    # main()
+
+    run_multiple_matrix_functions(["data/Gold_C_45_45"], [1,3])

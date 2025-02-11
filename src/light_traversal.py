@@ -100,7 +100,7 @@ def get_fresnel_thin_film_matrix(theta_incoming, N_air, N_gold, N_glass, d, wave
 
     # delta = np.angle(Transmited_Light[0] / Transmited_Light[1])
 
-    delta = np.abs(4 * np.pi * N_gold / wavelength * d * np.cos(theta_incoming))
+    delta = np.abs(4 * np.pi * N_gold / wavelength * d * np.sin(theta_incoming))
     # delta = np.abs(4 * np.pi * N_gold / wavelength * d * np.cos(theta_incoming))
     # delta = 4 * np.pi * N_gold / wavelength * d * np.sin(theta_incoming)
 

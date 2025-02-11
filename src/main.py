@@ -141,10 +141,10 @@ def main():
 
     # fit_from_data(["data/Gold_Phi_1"])
     # fit_from_data(["data/Gold_FULL_1"])
-    # fit_from_data(["data/Gold_D_45_45_1"])
-    fit_from_data(["data/Gold_Ficc_1"])
+    # fit_from_data(["data/Gold_D_45_5_1"])
+    # fit_from_data(["data/Gold_Ficc_1"])
 
-    # plot_range_of_depths()
+    plot_range_of_depths()
     # plot_range_of_brewsters()
 
 def run_multiple_matrix_functions(filenames, function_range = range(4)):

@@ -125,7 +125,7 @@ def print_parameters_nicely(values, errors, names, units):
 def plot_range_of_depths():
     from main import get_expected_intensities, get_guesses_and_bounds
 
-    depths = np.linspace(30e-9, 50e-9, num=15, endpoint=True)
+    depths = np.linspace(40e-9, 60e-9, num=15, endpoint=True)
     param, _ = get_guesses_and_bounds()
 
     for depth in depths:

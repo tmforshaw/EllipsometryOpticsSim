@@ -100,14 +100,15 @@ def get_fresnel_thin_film_matrix(theta_incoming, N_air, N_gold, N_glass, d, wave
 
     # delta = np.angle(Transmited_Light[0] / Transmited_Light[1])
 
-    delta = np.abs(4 * np.pi * N_gold / wavelength * d * np.sin(theta_incoming))
+    delta = np.abs(4 * np.pi * N_gold / wavelength * d * np.cos(theta_incoming))
+    # delta = np.abs(4 * np.pi * N_gold / wavelength * d * np.cos(theta_incoming))
     # delta = 4 * np.pi * N_gold / wavelength * d * np.sin(theta_incoming)
 
     # n_gold = np.real(N_gold)
     # k_gold = np.imag(N_gold)
     # psi = (n_gold * np.cos(theta_incoming) * np.sqrt(1 - (k_gold ** 2 / (n_gold ** 2 + k_gold ** 2)))) / (np.sqrt(n_gold ** 2 + k_gold ** 2) * np.sqrt(1 - (np.sin(theta_incoming) ** 2 / (n_gold ** 2 + k_gold ** 2))))
 
-    # print("Psi: {:.4G}\tDelta: {:.4G}".format(psi * 180/np.pi, delta *180/np.pi))
+    # print("Mine:\t Psi: {:.4G}\tDelta: {:.4G}".format(psi * 180/np.pi, delta *180/np.pi))
 
     #Describe this phase offset and the magnitude in a Jones' matrix
     return get_matrix_from_psi_delta(psi, delta)
@@ -249,7 +250,7 @@ def rihan_scattering_matrix(n_au, n_quartz, d_au, d_quartz, ang):
     psi = np.arctan(np.abs(Sg11[0, 0] / Sg11[1, 1]))
     delta = np.angle(Sg11[0, 0] / Sg11[1, 1])
 
-    # print("Psi: {:.4G}\tDelta: {:.4G}".format(psi * 180/np.pi, delta *180/np.pi))
+    # print("Rihan:\tPsi: {:.4G}\tDelta: {:.4G}".format(psi * 180/np.pi, delta *180/np.pi))
     
     return get_matrix_from_psi_delta(psi, delta)
 
@@ -263,7 +264,7 @@ def get_sample_matrix(sample_angle_of_incidence, N_air, N_gold, N_glass, d, wave
         case 2:
             return thin_film_matrix_2023(wavelength, sample_angle_of_incidence, np.real(N_gold), np.imag(N_gold), np.real(N_glass), np.imag(N_glass), d)
         case 3:
-            return rihan_scattering_matrix(N_gold, N_glass, d, 0.02, sample_angle_of_incidence)
+            return rihan_scattering_matrix(N_gold, N_glass, d, 0.01, sample_angle_of_incidence)
         case _:
             print("Unknown matrix type used")
             return np.identity(2)

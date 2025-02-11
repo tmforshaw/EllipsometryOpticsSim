@@ -32,9 +32,9 @@ def get_expected_intensities(compensator_angles, sample_angle_of_incidence, n_go
 
     # Find the effective reflection and take the absolute value so it's real
     # R_effective = (R_paralell + R_perpendicular) / 2
-    # intensities = np.abs(np.sum(final_field_strength, axis=2).reshape(len(final_field_strength)) / 2) * amplitude + offset 
+    intensities = np.abs(np.sum(final_field_strength, axis=2).reshape(len(final_field_strength)) / 2) + y_offset 
 
-    intensities = np.sum(np.abs(final_field_strength) ** 2, axis=2).reshape(len(final_field_strength)) + y_offset
+    # intensities = np.sum(np.abs(final_field_strength) ** 2, axis=2).reshape(len(final_field_strength)) + y_offset
 
     intensities /= max(intensities)
 
@@ -44,13 +44,10 @@ def get_expected_intensities(compensator_angles, sample_angle_of_incidence, n_go
 def get_guesses_and_bounds():
     # Initial guesses and bounds for parameters
     # amplitude_guess,  amplitude_bounds  = 1,                             [0.001, 1]
-    n_angle_guess,    n_angle_bounds    = get_default_brewsters_angle(), [50 * np.pi/180, 60 * np.pi / 180]
-    # n_gold_guess,     n_gold_bounds     = 4.652,                       [0, 5]
-    # k_gold_guess,     k_gold_bounds     = -0.5776,                        [-1, 5]
-    n_gold_guess,     n_gold_bounds     = 0.19404,                       [0, 5]
-    k_gold_guess,     k_gold_bounds     = 3.5934,                        [-1, 5]
-    d_guess,          d_bounds          = 40e-9,                         [10e-9, 100e-9]
-    # wavelength_guess, wavelength_bounds = 632.8e-9,                      [600e-9, 700e-9]
+    n_angle_guess,      n_angle_bounds      = get_default_brewsters_angle(), [50 * np.pi/180, 60 * np.pi / 180]
+    n_gold_guess,       n_gold_bounds       = 0.18,                          [-15, 15]
+    k_gold_guess,       k_gold_bounds       = 3.443,                         [-15, 15]
+    d_guess,            d_bounds            = 40e-9,                         [10e-9, 150e-9]
     x_offset_guess,     x_offset_bounds     = 0,                             [-np.pi/8, np.pi/8]
     y_offset_guess,     y_offset_bounds     = 0,                             [0, 1]
 
@@ -121,6 +118,9 @@ def plot_from_data(filenames):
         data = read_file_to_data(filename)
         data_x, data_y = data[0], data[1]
 
+        # TODO Normalise the data
+        data_y = normalise_data(data_y)
+
         # Format the figure and plot
         format_plot(max(data_y))
 
@@ -128,7 +128,7 @@ def plot_from_data(filenames):
         label_modifier = " {}".format(filename) if len(filenames) > 1 else ""
 
         # Plot the measured data to the same figure
-        plt.scatter(data_x * 180 / np.pi, data_y, c='r', label="Intensity Data{}".format(label_modifier))
+        plt.scatter(data_x * 180 / np.pi, data_y, label="Intensity Data{}".format(label_modifier))
 
     plt.legend()
     plt.tight_layout()
@@ -137,21 +137,15 @@ def plot_from_data(filenames):
 def main():
     print_sample_matrix_type(SAMPLE_MATRIX_FUNCTION)
 
-    # plot_default()
+    # plot_from_data(["data/Gold_D_45_45_1", "data/Gold_FULL_1","data/Gold_FULL_2", "data/Gold_FULL_3", "data/Gold_C_45_45_1", "data/Gold_C_45_45_2", "data/Gold_C_45_45_3"])
 
-    # fit_from_data(["data/Gold_A_1"])
-    # fit_from_data(["data/Gold_B_4_NDF"])
-
-    # fit_from_data(["data/Gold_B_5_NDF"])
-    # fit_from_data(["data/Gold_B_5_NDF", "data/Gold_B_6_NDF_Amp"])
-    # fit_from_data(["data/Gold_B_6_NDF_Amp"])
-
-    # fit_from_data(["data/Gold_C_1"])
-
-    # fit_from_data(["data/Gold_C_45_45"])
+    # fit_from_data(["data/Gold_Phi_1"])
+    # fit_from_data(["data/Gold_FULL_1"])
+    # fit_from_data(["data/Gold_D_45_45_1"])
+    fit_from_data(["data/Gold_Ficc_1"])
 
     # plot_range_of_depths()
-    plot_range_of_brewsters()
+    # plot_range_of_brewsters()
 
 def run_multiple_matrix_functions(filenames, function_range = range(4)):
     global SAMPLE_MATRIX_FUNCTION
@@ -165,6 +159,6 @@ def run_multiple_matrix_functions(filenames, function_range = range(4)):
         print()
 
 if __name__ == "__main__":
-    # main()
+    main()
 
-    run_multiple_matrix_functions(["data/Gold_C_45_45"], [1,3])
+    # run_multiple_matrix_functions(["data/Gold_D_45_45_2"], [1, 2])

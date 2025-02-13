@@ -125,11 +125,11 @@ def print_parameters_nicely(values, errors, names, units):
 def plot_range_of_depths():
     from main import get_expected_intensities, get_guesses_and_bounds
 
-    depths = np.linspace(40e-9, 60e-9, num=15, endpoint=True)
+    depths = np.linspace(30e-9, 80e-9, num=5, endpoint=True)
     param, _ = get_guesses_and_bounds()
 
     for depth in depths:
-        x = np.linspace(-np.pi/2, np.pi/2, num=300, endpoint=True)
+        x = np.linspace(0, np.pi * 2, num=300, endpoint=True)
         plt.plot(x * 180 / np.pi, get_expected_intensities(x, param[0], param[1], param[2], depth), ls="-", lw=3, label="$d = {:.4G}$".format(depth))
 
     plt.legend()
@@ -143,7 +143,7 @@ def plot_range_of_brewsters():
     param, _ = get_guesses_and_bounds()
 
     for brewster in brewsters:
-        x = np.linspace(-np.pi/2, np.pi/2, num=300, endpoint=True)
+        x = np.linspace(0, np.pi, num=300, endpoint=True)
         plt.plot(x * 180 / np.pi, get_expected_intensities(x, brewster, param[1], param[2], param[3]), ls="-", lw=3, label=r"$\theta_B = {:.4G}$".format(brewster))
 
     plt.legend()

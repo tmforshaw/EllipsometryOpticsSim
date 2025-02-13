@@ -7,7 +7,7 @@ from light_traversal import get_rotated_linear_polariser_matrix, get_rotated_qua
 from helpers import *
 
 # Select the matrix to use for the sample
-SAMPLE_MATRIX_FUNCTION = 1 
+SAMPLE_MATRIX_FUNCTION = 3 
 
 # Calculates the expected intensity of the light, for a range of compensator angles, using the Jones' matrix ray transfer method
 def get_expected_intensities(compensator_angles, sample_angle_of_incidence, n_gold, k_gold, d, x_offset = 0, y_offset = 0):
@@ -28,7 +28,7 @@ def get_expected_intensities(compensator_angles, sample_angle_of_incidence, n_go
     analyser_mat = get_rotated_linear_polariser_matrix(np.pi / 4)
 
     # Multiply the Jones' matrices in reverse order to represent the light-ray traversal, then multiply by the field strength vector to apply this combined matrix to it
-    final_field_strength = np.array([analyser_mat @ get_rotated_quarter_wave_plate(compensator_angle - x_offset) @ sample_mat @ polarisation_mat @ original_field_strength for compensator_angle in compensator_angles])# Use @ instead of * to allow for different sized matrices to be dot-producted together
+    final_field_strength = np.array([analyser_mat @ get_rotated_quarter_wave_plate(compensator_angle) @ sample_mat @ polarisation_mat @ original_field_strength for compensator_angle in compensator_angles])# Use @ instead of * to allow for different sized matrices to be dot-producted together
 
     # Find the effective reflection and take the absolute value so it's real
     # R_effective = (R_paralell + R_perpendicular) / 2
@@ -43,10 +43,9 @@ def get_expected_intensities(compensator_angles, sample_angle_of_incidence, n_go
 # Define the initial guesses and bounds for the fitting
 def get_guesses_and_bounds():
     # Initial guesses and bounds for parameters
-    # amplitude_guess,  amplitude_bounds  = 1,                             [0.001, 1]
-    n_angle_guess,      n_angle_bounds      = get_default_brewsters_angle(), [50 * np.pi/180, 60 * np.pi / 180]
-    n_gold_guess,       n_gold_bounds       = 0.18,                          [-15, 15]
-    k_gold_guess,       k_gold_bounds       = 3.443,                         [-15, 15]
+    n_angle_guess,      n_angle_bounds      = get_default_brewsters_angle(), [50 * np.pi/180, 60 * np.pi/180]
+    n_gold_guess,       n_gold_bounds       = 0.18508,                       [0, 1]
+    k_gold_guess,       k_gold_bounds       = 3.4233,                        [0, 5]
     d_guess,            d_bounds            = 40e-9,                         [10e-9, 150e-9]
     x_offset_guess,     x_offset_bounds     = 0,                             [-np.pi/8, np.pi/8]
     y_offset_guess,     y_offset_bounds     = 0,                             [0, 1]
@@ -139,12 +138,22 @@ def main():
 
     # plot_from_data(["data/Gold_D_45_45_1", "data/Gold_FULL_1","data/Gold_FULL_2", "data/Gold_FULL_3", "data/Gold_C_45_45_1", "data/Gold_C_45_45_2", "data/Gold_C_45_45_3"])
 
-    # fit_from_data(["data/Gold_Phi_1"])
+    # fit_from_data(["data/Gold_Phi_1","data/Gold_FULL_1","data/Gold_D_45_45_1","data/Gold_Ficc_1"])
     # fit_from_data(["data/Gold_FULL_1"])
-    # fit_from_data(["data/Gold_D_45_5_1"])
+    # fit_from_data(["data/Gold_D_45_45_1"])
     # fit_from_data(["data/Gold_Ficc_1"])
+    # fit_from_data(["data/Gold_H_1"])
 
-    plot_range_of_depths()
+    # fit_from_data(["data/Glass_4"])
+    
+    # plot_from_data(["data/Gold_C_45_45_1", "data/Gold_D_45_45_1", "data/Gold_FULL_1", "data/Gold_Ficc_1", "data/Gold_G_1", "data/Gold_H_1", "data/Gold_Phi_1", "data/Gold_Phi_2_(204)"])
+    plot_from_data(["data/Gold_Phi_1", "data/Gold_Phi_2_(204)", "data/Gold_Phi_3_(206)", "data/Gold_Phi_4_(208)", "data/Gold_Phi_5_(210)", "data/Gold_Phi_6_(198)", "data/Gold_Phi_7_(196)", "data/Gold_Phi_8_(194)"])
+
+    # fit_from_data(["data/Gold_Phi_1", "data/Gold_Phi_2_(204)", "data/Gold_Phi_3_(206)", "data/Gold_Phi_4_(208)", "data/Gold_Phi_5_(210)", "data/Gold_Phi_6_(198)", "data/Gold_Phi_7_(196)", "data/Gold_Phi_8_(194)"])
+
+    # plot_from_data(["data/Gold_B_4_NDF", "data/Gold_C_1"])
+
+    # plot_range_of_depths()
     # plot_range_of_brewsters()
 
 def run_multiple_matrix_functions(filenames, function_range = range(4)):
@@ -161,4 +170,4 @@ def run_multiple_matrix_functions(filenames, function_range = range(4)):
 if __name__ == "__main__":
     main()
 
-    # run_multiple_matrix_functions(["data/Gold_D_45_45_2"], [1, 2])
+    # run_multiple_matrix_functions(["data/Glass_4"], [1, 2, 3])

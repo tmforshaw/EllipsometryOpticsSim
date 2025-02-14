@@ -99,16 +99,21 @@ def get_fresnel_thin_film_matrix(theta_incoming, N_air, N_gold, N_glass, d, wave
 
     T_air_gold_glass_gold_glass_gold_air = (1 - R_air_gold) * R_gold_glass_at_100_percent * R_gold_air_at_100_percent * R_gold_glass_at_100_percent * (1 - R_gold_air_at_100_percent)
 
-    # Reflection from air-gold and the transmitted from gold-air
-    Transmited_Light = R_air_gold + T_gold_air + T_air_gold_glass_gold_glass_gold_air
-    # Transmited_Light = R_air_gold + T_gold_air
-    # Transmited_Light = R_air_gold
-    # Transmited_Light = R_air_gold + R_gold_glass_at_100_percent
+    beta_gold = 2 * np.pi * N_gold / wavelength * d * np.cos(theta_incoming)
+    beta_glass = 2 * np.pi * N_glass / wavelength * d * np.cos(theta_incoming)
 
-    psi = np.atan(np.abs(Transmited_Light[0] / Transmited_Light[1]))
+    # Transmitted_Light = R_air_gold + T_gold_air * np.array([np.exp(-2j * beta_gold), 1 + np.exp(-2j * beta_gold)]) + T_air_gold_glass_gold_glass_gold_air * np.array([np.exp(-2j * (beta_gold + beta_glass)), 1 + np.exp(-2j * (beta_gold + beta_glass))]) 
+
+    # Reflection from air-gold and the transmitted from gold-air
+    Transmitted_Light = R_air_gold + T_gold_air + T_air_gold_glass_gold_glass_gold_air
+    # Transmitted_Light = R_air_gold + T_gold_air
+    # Transmitted_Light = R_air_gold
+    # Transmitted_Light = R_air_gold + R_gold_glass_at_100_percent
+
+    psi = np.atan(np.abs(Transmitted_Light[0] / Transmitted_Light[1]))
 
     # delta = np.angle(Transmited_Light[0] / Transmited_Light[1])
-    # delta = np.atan2(np.imag(Transmited_Light[0] / Transmited_Light[1]), np.real(Transmited_Light[0] / Transmited_Light[1]))
+    # delta = np.atan2(np.imag(Transmitted_Light[0] / Transmitted_Light[1]), np.real(Transmitted_Light[0] / Transmitted_Light[1]))
 
     delta = np.abs(4 * np.pi * N_gold / wavelength * d * np.sin(theta_incoming))
     # delta = np.abs(4 * np.pi * N_gold / wavelength * d * np.cos(theta_incoming))

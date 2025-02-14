@@ -79,17 +79,16 @@ def print_sample_matrix_type(type):
     spacing_str = "{:-<8}".format("")
     print(f"{spacing_str}# Using {type_string} Matrix #{spacing_str}")
 
-def print_parameters_nicely(values, errors, names, units):
+def print_parameters_nicely(values, errors, names, units, conversions = [180/np.pi, 1, 1, 1, 180/np.pi]):
     # Get the length of the longest name in the list
     max_name_len = len(max(names, key=len))
 
     # Adjust specific values to change their units from radians to degrees
     value_and_errors = list(zip(values, errors))
     for i, (value, err) in enumerate(value_and_errors):
-        match i:
-            case(0 | 4):
-                value *= 180/np.pi
-                err *= 180/np.pi
+        if i < len(conversions) and conversions[i] != 0:
+                value *= conversions[i]
+                err *= conversions[i]
 
                 value_and_errors[i] = value, err
 
@@ -156,7 +155,7 @@ def plot_default():
     param, _ = get_guesses_and_bounds()
 
     x = np.linspace(0, np.pi * 2, num=300, endpoint=True)
-    plt.plot(x * 180 / np.pi, get_expected_intensities(x, param[0], param[1], param[2], param[3], param[4], param[5], param[6]), ls="-", lw=3, label="Plot")
+    plt.plot(x * 180 / np.pi, get_expected_intensities(x, *param), ls="-", lw=3, label="Plot")
 
     plt.legend()
     plt.tight_layout()

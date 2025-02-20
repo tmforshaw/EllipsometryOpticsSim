@@ -101,7 +101,7 @@ def print_parameters_nicely(values, errors, names, units, conversions = [180/np.
     # Print out the (nicely spaced) names, values, errors, and units
     for i in range(len(value_and_errors)):
         # Pad the values, using escaped curly brackets "{{}}" so that the next format still works
-        padded_string = "{{{{}}}}: {{:<{}}}{{{{}}}}{{:<{}}}[{{{{}}}}]".format(max_name_len - len(names[i]) + 2, max_value_err_len - len(value_err_strings[i]) + 2).format("","")
+        padded_string = "\t{{{{}}}}: {{:<{}}}{{{{}}}}{{:<{}}}[{{{{}}}}]".format(max_name_len - len(names[i]) + 2, max_value_err_len - len(value_err_strings[i]) + 2).format("","")
 
         print(padded_string.format(names[i], value_err_strings[i], units[i]))
 

@@ -114,12 +114,11 @@ def get_fresnel_thin_film_matrix(theta_incoming, N_air, N_gold, N_glass, d, wave
     # Transmitted_Light = R_air_gold
     # Transmitted_Light = R_air_gold + R_gold_glass_at_100_percent
 
-    psi = np.atan(np.abs(Transmitted_Light[0] / Transmitted_Light[1]))
+    ratio = Transmitted_Light[0] / Transmitted_Light[1]
 
-    delta = np.angle(Transmitted_Light[0] / Transmitted_Light[1])
-    # delta = np.atan2(np.imag(Transmitted_Light[0] / Transmitted_Light[1]), np.real(Transmitted_Light[0] / Transmitted_Light[1]))
+    psi = np.atan(np.abs(ratio))
 
-    print(delta * 180 / np.pi)
+    delta = np.angle(ratio)
 
     # delta = np.abs(4 * np.pi * N_gold / wavelength * d * np.sin(theta_incoming))
     # delta = np.abs(4 * np.pi * N_gold / wavelength * d * np.cos(theta_incoming))
@@ -136,6 +135,7 @@ def get_fresnel_thin_film_matrix(theta_incoming, N_air, N_gold, N_glass, d, wave
     #Describe this phase offset and the magnitude in a Jones' matrix
     return get_matrix_from_psi_delta(psi, delta)
 
+# Fresnel equations used in "Determination of refractive index and layer thickness of nm-thin films via ellipsometry" by Peter Nestler and Christiane A. Helm
 def get_fresnel_thin_film_hardcoded(theta_incoming, N_air, N_gold, N_glass, d, wavelength):
     theta_refracted = np.asin((N_air / N_gold) * np.sin(theta_incoming))
 
@@ -149,18 +149,21 @@ def get_fresnel_thin_film_hardcoded(theta_incoming, N_air, N_gold, N_glass, d, w
     B_plus = B + B_plus_minus
     B_minus = B - B_plus_minus
 
-    beta = 2 * np.pi * d / wavelength
+    phase_diff = 2 * np.pi * d / wavelength
 
-    R_parallel = (N_air * np.cos(theta_incoming) - N_gold * np.cos(theta_refracted) + 1j * beta * A_plus) / (N_air * np.cos(theta_incoming) + N_gold * np.cos(theta_refracted) + 1j * beta * A_minus)
-    R_perpendicular = (N_air * np.cos(theta_refracted) - N_gold * np.cos(theta_incoming) + 1j * beta * B_plus) / (N_air * np.cos(theta_refracted) + N_gold * np.cos(theta_incoming) + 1j * beta * B_minus)
+    R_parallel = (N_glass * np.cos(theta_incoming) - N_air * np.cos(theta_refracted) + 1j * phase_diff * A_plus) / (N_glass * np.cos(theta_incoming) + N_air * np.cos(theta_refracted) + 1j * phase_diff * A_minus)
+    R_perpendicular = (N_air * np.cos(theta_refracted) - N_glass * np.cos(theta_incoming) + 1j * phase_diff * B_plus) / (N_air * np.cos(theta_refracted) + N_glass * np.cos(theta_incoming) + 1j * phase_diff * B_minus)
 
     R = np.array([R_parallel, R_perpendicular])
     Transmitted_Light = R
-    
-    psi = np.atan(np.abs(Transmitted_Light[0] / Transmitted_Light[1]))
 
-    # delta = np.angle(Transmited_Light[0] / Transmited_Light[1])
-    delta = np.atan2(np.imag(Transmitted_Light[0] / Transmitted_Light[1]), np.real(Transmitted_Light[0] / Transmitted_Light[1]))
+    ratio = Transmitted_Light[0] / Transmitted_Light[1]
+    
+    psi = np.atan(np.abs(ratio))
+
+    delta = np.angle(ratio)
+
+    # print(psi * 180/np.pi, delta * 180 / np.pi)
 
     return get_matrix_from_psi_delta(psi, delta)
 

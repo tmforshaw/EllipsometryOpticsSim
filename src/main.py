@@ -119,8 +119,8 @@ def fit_data_to_expected_psi_delta(compensator_angles, measured_intensities, int
 
 # Read the data from a file, then plot this data, alongside the expected intensities from the optimal fitting of the data
 def fit_from_data(filenames):
-    for filename in filenames:
-        print("Data for {}:\n".format(filename))
+    for i, filename in enumerate(filenames):
+        print("Fitting {}:".format(filename))
     
         # Read the data and seperate it into x and y values
         data = read_file_to_data(filename)
@@ -152,20 +152,23 @@ def fit_from_data(filenames):
         plt.scatter(data_x * 180 / np.pi, data_y, c='r', label="Intensity Data{}".format(label_modifier), lw=4)
         plt.fill_between(data_x * 180 / np.pi, data_y - sigma, data_y + sigma, color="r", alpha=0.2, label="Errors on Intensity Data")
 
+        if i < len(filenames) - 1:
+            print()
+
     plt.legend()
     plt.tight_layout()
     plt.show()
 
 def plot_from_data(filenames):
     for filename in filenames:
-        print("Data for {}:\n".format(filename))
+        print("Plotting {}:".format(filename))
     
         # Read the data and seperate it into x and y values
         data = read_file_to_data(filename)
         data_x, data_y = data[0], data[1]
 
-        # TODO Normalise the data
-        data_y = normalise_data(data_y)
+        # # TODO Normalise the data
+        # data_y = normalise_data(data_y)
 
         # Format the figure and plot
         format_plot(max(data_y))
@@ -201,6 +204,8 @@ def main():
 
     # plot_from_data(["data/Gold_B_4_NDF", "data/Gold_C_1"])
 
+    # plot_from_data(["data/Gold_I_1"])
+
     # plot_default()
 
     # plot_range_of_depths()
@@ -209,15 +214,17 @@ def main():
 def run_multiple_matrix_functions(filenames, function_range = range(4)):
     global SAMPLE_MATRIX_FUNCTION
 
-    for i in function_range:
+    for iter_i, i in enumerate(function_range):
         # Update global variable to change matrix function used to calculate
         SAMPLE_MATRIX_FUNCTION = i
 
         print_sample_matrix_type(i)
         fit_from_data(filenames)
-        print()
+
+        if iter_i < len(function_range) - 1:
+            print()
 
 if __name__ == "__main__":
-    main()
+    # main()
 
-    # run_multiple_matrix_functions(["data/Gold_C_45_45_2"], [1, 2, 3])
+    run_multiple_matrix_functions(["data/Gold_C_45_45_3"], [1, 3, 4])

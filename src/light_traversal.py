@@ -84,8 +84,8 @@ def fresnel_reflection(theta_incoming, N1, N2, wavelength, d):
     R_parallel = (N1 * np.cos(theta_refracted) - N2 * np.cos(theta_incoming)) / (N1 * np.cos(theta_refracted) + N2 * np.cos(theta_incoming))
     R_perpendicular = (N1 * np.cos(theta_incoming) - N2 * np.cos(theta_refracted)) / (N1 * np.cos(theta_incoming) + N2 * np.cos(theta_refracted))
 
-    # R_parallel *= np.exp(-1j * beta)
-    # R_perpendicular *= np.exp(-1j * beta)
+    R_parallel *= np.exp(-1j * beta)
+    R_perpendicular *= np.exp(-1j * beta)
 
     # R_parallel = -1j * beta
     # R_perpendicular = -1j * beta
@@ -118,9 +118,9 @@ def get_fresnel_thin_film_matrix(theta_incoming, N_air, N_gold, N_glass, d, wave
 
     psi = np.atan(np.abs(ratio))
 
-    delta = np.angle(ratio)
+    # delta = np.angle(ratio)
 
-    # delta = np.abs(4 * np.pi * N_gold / wavelength * d * np.sin(theta_incoming))
+    delta = np.abs(4 * np.pi * N_gold / wavelength * d * np.sin(theta_incoming))
     # delta = np.abs(4 * np.pi * N_gold / wavelength * d * np.cos(theta_incoming))
     # delta = 4 * np.pi * N_gold / wavelength * d * np.sin(theta_incoming)
     # delta = 4 * np.pi * np.real(N_gold) / wavelength * d * np.cos(theta_incoming)
@@ -137,7 +137,7 @@ def get_fresnel_thin_film_matrix(theta_incoming, N_air, N_gold, N_glass, d, wave
 
 # Fresnel equations used in "Determination of refractive index and layer thickness of nm-thin films via ellipsometry" by Peter Nestler and Christiane A. Helm
 def get_fresnel_thin_film_hardcoded(theta_incoming, N_air, N_gold, N_glass, d, wavelength):
-    theta_refracted = np.asin((N_air / N_gold) * np.sin(theta_incoming))
+    theta_refracted = np.asin((N_air / N_glass) * np.sin(theta_incoming))
 
     A = N_gold ** 2 * np.cos(theta_incoming) * np.cos(theta_refracted)
     A_plus_minus = N_air * N_glass + (N_air * N_glass ** 3 * np.sin(theta_refracted) ** 2 / N_gold ** 2)
@@ -160,7 +160,6 @@ def get_fresnel_thin_film_hardcoded(theta_incoming, N_air, N_gold, N_glass, d, w
     ratio = Transmitted_Light[0] / Transmitted_Light[1]
     
     psi = np.atan(np.abs(ratio))
-
     delta = np.angle(ratio)
 
     # print(psi * 180/np.pi, delta * 180 / np.pi)

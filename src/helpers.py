@@ -81,14 +81,14 @@ def print_sample_matrix_type(type):
     spacing_str = "{:-<8}".format("")
     print(f"{spacing_str}# Using {type_string} Matrix #{spacing_str}")
 
-def print_parameters_nicely(values, errors, names, units, conversions = [180/np.pi, 1, 1, 1, 180/np.pi]):
+def print_parameters_nicely(values, errors, names, units, conversions):
     # Get the length of the longest name in the list
     max_name_len = len(max(names, key=len))
 
     # Adjust specific values to change their units from radians to degrees
     value_and_errors = list(zip(values, errors))
     for i, (value, err) in enumerate(value_and_errors):
-        if i < len(conversions) and conversions[i] != 0:
+        if i < len(conversions) and (conversions[i] != 0 or conversions != 1):
                 value *= conversions[i]
                 err *= conversions[i]
 

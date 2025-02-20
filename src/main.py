@@ -69,8 +69,8 @@ def get_expected_intensities_psi_delta(compensator_angles, psi, delta, x_offset 
 def get_guesses_and_bounds():
     # Initial guesses and bounds for parameters
     n_angle_guess,      n_angle_bounds      = get_default_brewsters_angle(), [50 * np.pi/180, 60 * np.pi/180]
-    n_gold_guess,       n_gold_bounds       = 0.18508,                       [0, 1]
-    k_gold_guess,       k_gold_bounds       = 3.4233,                        [0, 5]
+    n_gold_guess,       n_gold_bounds       = 0.18508,                       [0.1, 0.2]
+    k_gold_guess,       k_gold_bounds       = 3.4233,                        [3, 4]
     d_guess,            d_bounds            = 40e-9,                         [10e-9, 150e-9]
     x_offset_guess,     x_offset_bounds     = 0,                             [-np.pi/8, np.pi/8]
     y_offset_guess,     y_offset_bounds     = 0,                             [0, 1]
@@ -95,7 +95,7 @@ def fit_data_to_expected(compensator_angles, measured_intensities, intensity_unc
     param_err = np.sqrt(np.diag(param_convolution))
 
     # Print out the values, along with their errors
-    print_parameters_nicely(optimal_param, param_err, names=["Angle", "N_gold", "K_gold", "d", "X-Offset", "Y-Offset"], units=["Degrees", "", "", "Metres", "Degrees", ""])
+    print_parameters_nicely(optimal_param, param_err, names=["Angle", "N_gold", "K_gold", "d", "X-Offset", "Y-Offset"], units=["Degrees", "", "", "Metres", "Degrees", ""], conversions = [180/np.pi, 1, 1, 1, 180/np.pi, 1])
 
     return optimal_param, param_err
 
@@ -143,6 +143,11 @@ def fit_from_data(filenames):
         optimal_param, param_err = fit_data_to_expected(data_x, data_y, sigma)
         plt.plot(data_x * 180 / np.pi, get_expected_intensities(data_x, *optimal_param), c='k', ls="-", label="Calculated Result{}".format(label_modifier)) # Plot the light intensity expected for the fitted parameters
 
+        expected_y = get_expected_intensities(data_x, *optimal_param)
+        chi_sqr = np.sum((data_y - expected_y) ** 2 / expected_y)
+
+        print("Goodness of fit: ", chi_sqr)
+
         # # Fit the data to the function
         # optimal_param, param_err = fit_data_to_expected_psi_delta(data_x, data_y, sigma)
         # plt.plot(data_x * 180 / np.pi, get_expected_intensities_psi_delta(data_x, *optimal_param), c='k', ls="-", label="Calculated Result{}".format(label_modifier)) # Plot the light intensity expected for the fitted parameters
@@ -167,8 +172,8 @@ def plot_from_data(filenames):
         data = read_file_to_data(filename)
         data_x, data_y = data[0], data[1]
 
-        # # TODO Normalise the data
-        # data_y = normalise_data(data_y)
+        # TODO Normalise the data
+        data_y = normalise_data(data_y)
 
         # Format the figure and plot
         format_plot(max(data_y))
@@ -186,25 +191,16 @@ def plot_from_data(filenames):
 def main():
     print_sample_matrix_type(SAMPLE_MATRIX_FUNCTION)
 
-    # plot_from_data(["data/Gold_D_45_45_1", "data/Gold_FULL_1","data/Gold_FULL_2", "data/Gold_FULL_3", "data/Gold_C_45_45_1", "data/Gold_C_45_45_2", "data/Gold_C_45_45_3"])
-
-    fit_from_data(["data/Gold_Phi_1","data/Gold_FULL_1","data/Gold_D_45_45_1","data/Gold_Ficc_1"])
-    # fit_from_data(["data/Gold_Phi_1"])
-    # fit_from_data(["data/Gold_FULL_1"])
-    # fit_from_data(["data/Gold_D_45_45_1"])
-    # fit_from_data(["data/Gold_Ficc_1"])
-    # fit_from_data(["data/Gold_H_1"])
-
-    # fit_from_data(["data/Glass_4"])
-    
-    # plot_from_data(["data/Gold_C_45_45_1", "data/Gold_D_45_45_1", "data/Gold_FULL_1", "data/Gold_Ficc_1", "data/Gold_G_1", "data/Gold_H_1", "data/Gold_Phi_1", "data/Gold_Phi_2_(204)"])
     # plot_from_data(["data/Gold_Phi_1", "data/Gold_Phi_2_(204)", "data/Gold_Phi_3_(206)", "data/Gold_Phi_4_(208)", "data/Gold_Phi_5_(210)", "data/Gold_Phi_6_(198)", "data/Gold_Phi_7_(196)", "data/Gold_Phi_8_(194)"])
 
     # fit_from_data(["data/Gold_Phi_1", "data/Gold_Phi_2_(204)", "data/Gold_Phi_3_(206)", "data/Gold_Phi_4_(208)", "data/Gold_Phi_5_(210)", "data/Gold_Phi_6_(198)", "data/Gold_Phi_7_(196)", "data/Gold_Phi_8_(194)"])
 
-    # plot_from_data(["data/Gold_B_4_NDF", "data/Gold_C_1"])
-
+    # fit_from_data(["data/Gold_C_45_45_3", "data/Gold_I_2"])
     # plot_from_data(["data/Gold_I_1"])
+
+    # fit_from_data(["data/Gold_Ficc_1", "data/Gold_Ficc_2", "data/Gold_Ficc_3"])
+
+    fit_from_data(["data/Gold_52nm_2"])
 
     # plot_default()
 
@@ -212,19 +208,18 @@ def main():
     # plot_range_of_brewsters()
 
 def run_multiple_matrix_functions(filenames, function_range = range(4)):
-    global SAMPLE_MATRIX_FUNCTION
+    for i, matrix_index in enumerate(function_range):
+        # Update global variable to change which sample matrix function is used
+        global SAMPLE_MATRIX_FUNCTION
+        SAMPLE_MATRIX_FUNCTION = matrix_index
 
-    for iter_i, i in enumerate(function_range):
-        # Update global variable to change matrix function used to calculate
-        SAMPLE_MATRIX_FUNCTION = i
-
-        print_sample_matrix_type(i)
+        print_sample_matrix_type(matrix_index)
         fit_from_data(filenames)
 
-        if iter_i < len(function_range) - 1:
+        if i < len(function_range) - 1:
             print()
 
 if __name__ == "__main__":
-    # main()
+    main()
 
-    run_multiple_matrix_functions(["data/Gold_C_45_45_3"], [1, 3, 4])
+    # run_multiple_matrix_functions(["data/Gold_52nm_1"], [1, 3, 4])

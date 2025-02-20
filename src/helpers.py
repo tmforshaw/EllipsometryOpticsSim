@@ -72,6 +72,8 @@ def print_sample_matrix_type(type):
             type_string = "2023"
         case 3:
             type_string = "Rihan's"
+        case 4:
+            type_string = "Fresnel (Hardcoded)"
         case _:
             type_string = "Unknown"
 

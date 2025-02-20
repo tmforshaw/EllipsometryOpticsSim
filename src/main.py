@@ -7,7 +7,7 @@ from light_traversal import get_rotated_linear_polariser_matrix, get_rotated_qua
 from helpers import *
 
 # Select the matrix to use for the sample
-SAMPLE_MATRIX_FUNCTION = 1 
+SAMPLE_MATRIX_FUNCTION = 4 
 
 # Calculates the expected intensity of the light, for a range of compensator angles, using the Jones' matrix ray transfer method
 def get_expected_intensities(compensator_angles, sample_angle_of_incidence, n_gold, k_gold, d, x_offset = 0, y_offset = 0):
@@ -28,7 +28,7 @@ def get_expected_intensities(compensator_angles, sample_angle_of_incidence, n_go
     analyser_mat = get_rotated_linear_polariser_matrix(np.pi / 4)
 
     # Multiply the Jones' matrices in reverse order to represent the light-ray traversal, then multiply by the field strength vector to apply this combined matrix to it
-    final_field_strength = np.array([analyser_mat @ get_rotated_quarter_wave_plate(compensator_angle) @ sample_mat @ polarisation_mat @ original_field_strength for compensator_angle in compensator_angles])# Use @ instead of * to allow for different sized matrices to be dot-producted together
+    final_field_strength = np.array([analyser_mat @ get_rotated_quarter_wave_plate(compensator_angle - x_offset) @ sample_mat @ polarisation_mat @ original_field_strength for compensator_angle in compensator_angles])# Use @ instead of * to allow for different sized matrices to be dot-producted together
 
     # Find the effective reflection and take the absolute value so it's real
     # R_effective = (R_paralell + R_perpendicular) / 2
@@ -186,6 +186,7 @@ def main():
     # plot_from_data(["data/Gold_D_45_45_1", "data/Gold_FULL_1","data/Gold_FULL_2", "data/Gold_FULL_3", "data/Gold_C_45_45_1", "data/Gold_C_45_45_2", "data/Gold_C_45_45_3"])
 
     fit_from_data(["data/Gold_Phi_1","data/Gold_FULL_1","data/Gold_D_45_45_1","data/Gold_Ficc_1"])
+    # fit_from_data(["data/Gold_Phi_1"])
     # fit_from_data(["data/Gold_FULL_1"])
     # fit_from_data(["data/Gold_D_45_45_1"])
     # fit_from_data(["data/Gold_Ficc_1"])
@@ -219,4 +220,4 @@ def run_multiple_matrix_functions(filenames, function_range = range(4)):
 if __name__ == "__main__":
     main()
 
-    # run_multiple_matrix_functions(["data/Glass_4"], [1, 2, 3])
+    # run_multiple_matrix_functions(["data/Gold_C_45_45_2"], [1, 2, 3])

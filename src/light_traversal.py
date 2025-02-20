@@ -73,15 +73,19 @@ def fresnel_reflection(theta_incoming, N1, N2, wavelength, d):
     theta_refracted = np.asin((N1 / N2) * np.sin(theta_incoming))
 
     # beta = 2 * np.pi * N1 / wavelength * d * np.cos(theta_refracted)
+    beta = 2 * np.pi * ( d / wavelength ) * np.sqrt(N1**2 - np.sin(theta_refracted)**2)
 
-    R_parallel = np.abs((N1 * np.cos(theta_refracted) - N2 * np.cos(theta_incoming)) / (N1 * np.cos(theta_refracted) + N2 * np.cos(theta_incoming))) ** 2
-    R_perpendicular = np.abs((N1 * np.cos(theta_incoming) - N2 * np.cos(theta_refracted)) / (N1 * np.cos(theta_incoming) + N2 * np.cos(theta_refracted))) ** 2
+    # R_parallel = np.abs((N1 * np.cos(theta_refracted) - N2 * np.cos(theta_incoming)) / (N1 * np.cos(theta_refracted) + N2 * np.cos(theta_incoming))) ** 2
+    # R_perpendicular = np.abs((N1 * np.cos(theta_incoming) - N2 * np.cos(theta_refracted)) / (N1 * np.cos(theta_incoming) + N2 * np.cos(theta_refracted))) ** 2
 
     # R_parallel = (N1 * np.cos(theta_refracted) - N2 * np.cos(theta_incoming)) / (N1 * np.cos(theta_refracted) + N2 * np.cos(theta_incoming)) ** 2
     # R_perpendicular = (N1 * np.cos(theta_incoming) - N2 * np.cos(theta_refracted)) / (N1 * np.cos(theta_incoming) + N2 * np.cos(theta_refracted)) ** 2
 
-    # R_parallel = np.exp(-1j * beta)
-    # R_perpendicular = np.exp(-1j * beta)
+    R_parallel = (N1 * np.cos(theta_refracted) - N2 * np.cos(theta_incoming)) / (N1 * np.cos(theta_refracted) + N2 * np.cos(theta_incoming))
+    R_perpendicular = (N1 * np.cos(theta_incoming) - N2 * np.cos(theta_refracted)) / (N1 * np.cos(theta_incoming) + N2 * np.cos(theta_refracted))
+
+    # R_parallel *= np.exp(-1j * beta)
+    # R_perpendicular *= np.exp(-1j * beta)
 
     # R_parallel = -1j * beta
     # R_perpendicular = -1j * beta
@@ -99,23 +103,25 @@ def get_fresnel_thin_film_matrix(theta_incoming, N_air, N_gold, N_glass, d, wave
 
     T_air_gold_glass_gold_glass_gold_air = (1 - R_air_gold) * R_gold_glass_at_100_percent * R_gold_air_at_100_percent * R_gold_glass_at_100_percent * (1 - R_gold_air_at_100_percent)
 
-    beta_gold = 2 * np.pi * N_gold / wavelength * d * np.cos(theta_incoming)
-    beta_glass = 2 * np.pi * N_glass / wavelength * d * np.cos(theta_incoming)
+    # beta_gold = 2 * np.pi * N_gold / wavelength * d * np.cos(theta_incoming)
+    # beta_glass = 2 * np.pi * N_glass / wavelength * d * np.cos(theta_incoming)
 
     # Transmitted_Light = R_air_gold + T_gold_air * np.array([np.exp(-2j * beta_gold), 1 + np.exp(-2j * beta_gold)]) + T_air_gold_glass_gold_glass_gold_air * np.array([np.exp(-2j * (beta_gold + beta_glass)), 1 + np.exp(-2j * (beta_gold + beta_glass))]) 
 
     # Reflection from air-gold and the transmitted from gold-air
-    Transmitted_Light = R_air_gold + T_gold_air + T_air_gold_glass_gold_glass_gold_air
-    # Transmitted_Light = R_air_gold + T_gold_air
+    # Transmitted_Light = R_air_gold + T_gold_air + T_air_gold_glass_gold_glass_gold_air
+    Transmitted_Light = R_air_gold + T_gold_air
     # Transmitted_Light = R_air_gold
     # Transmitted_Light = R_air_gold + R_gold_glass_at_100_percent
 
     psi = np.atan(np.abs(Transmitted_Light[0] / Transmitted_Light[1]))
 
-    # delta = np.angle(Transmited_Light[0] / Transmited_Light[1])
+    delta = np.angle(Transmitted_Light[0] / Transmitted_Light[1])
     # delta = np.atan2(np.imag(Transmitted_Light[0] / Transmitted_Light[1]), np.real(Transmitted_Light[0] / Transmitted_Light[1]))
 
-    delta = np.abs(4 * np.pi * N_gold / wavelength * d * np.sin(theta_incoming))
+    print(delta * 180 / np.pi)
+
+    # delta = np.abs(4 * np.pi * N_gold / wavelength * d * np.sin(theta_incoming))
     # delta = np.abs(4 * np.pi * N_gold / wavelength * d * np.cos(theta_incoming))
     # delta = 4 * np.pi * N_gold / wavelength * d * np.sin(theta_incoming)
     # delta = 4 * np.pi * np.real(N_gold) / wavelength * d * np.cos(theta_incoming)
@@ -128,6 +134,34 @@ def get_fresnel_thin_film_matrix(theta_incoming, N_air, N_gold, N_glass, d, wave
 
 
     #Describe this phase offset and the magnitude in a Jones' matrix
+    return get_matrix_from_psi_delta(psi, delta)
+
+def get_fresnel_thin_film_hardcoded(theta_incoming, N_air, N_gold, N_glass, d, wavelength):
+    theta_refracted = np.asin((N_air / N_gold) * np.sin(theta_incoming))
+
+    A = N_gold ** 2 * np.cos(theta_incoming) * np.cos(theta_refracted)
+    A_plus_minus = N_air * N_glass + (N_air * N_glass ** 3 * np.sin(theta_refracted) ** 2 / N_gold ** 2)
+    A_plus = A - A_plus_minus
+    A_minus = A + A_plus_minus
+
+    B = N_air * N_glass * np.cos(theta_incoming) * np.cos(theta_refracted)
+    B_plus_minus = N_glass ** 2 * np.sin(theta_refracted) ** 2 - N_gold ** 2
+    B_plus = B + B_plus_minus
+    B_minus = B - B_plus_minus
+
+    beta = 2 * np.pi * d / wavelength
+
+    R_parallel = (N_air * np.cos(theta_incoming) - N_gold * np.cos(theta_refracted) + 1j * beta * A_plus) / (N_air * np.cos(theta_incoming) + N_gold * np.cos(theta_refracted) + 1j * beta * A_minus)
+    R_perpendicular = (N_air * np.cos(theta_refracted) - N_gold * np.cos(theta_incoming) + 1j * beta * B_plus) / (N_air * np.cos(theta_refracted) + N_gold * np.cos(theta_incoming) + 1j * beta * B_minus)
+
+    R = np.array([R_parallel, R_perpendicular])
+    Transmitted_Light = R
+    
+    psi = np.atan(np.abs(Transmitted_Light[0] / Transmitted_Light[1]))
+
+    # delta = np.angle(Transmited_Light[0] / Transmited_Light[1])
+    delta = np.atan2(np.imag(Transmitted_Light[0] / Transmitted_Light[1]), np.real(Transmitted_Light[0] / Transmitted_Light[1]))
+
     return get_matrix_from_psi_delta(psi, delta)
 
 # The Thin Film Matrix used by the 2023 paper
@@ -282,6 +316,8 @@ def get_sample_matrix(sample_angle_of_incidence, N_air, N_gold, N_glass, d, wave
             return thin_film_matrix_2023(wavelength, sample_angle_of_incidence, np.real(N_gold), np.imag(N_gold), np.real(N_glass), np.imag(N_glass), d)
         case 3:
             return rihan_scattering_matrix(N_gold, N_glass, d, 0.01, sample_angle_of_incidence)
+        case 4:
+            return get_fresnel_thin_film_hardcoded(sample_angle_of_incidence, N_air, N_gold, N_glass, d, wavelength)
         case _:
             print("Unknown matrix type used")
             return np.identity(2)

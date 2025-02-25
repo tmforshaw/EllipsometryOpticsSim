@@ -309,6 +309,8 @@ def rihan_scattering_matrix(n_au, n_quartz, d_au, d_quartz, ang):
 
 # A helper function which can be used to switch out the sample matrix easily
 def get_sample_matrix(sample_angle_of_incidence, N_air, N_gold, N_glass, d, wavelength, sample_matrix_type):
+    # d = 0
+    
     match sample_matrix_type:
         case 0:
             return get_snell_thin_film_matrix(sample_angle_of_incidence, N_air, N_gold, N_glass, d, wavelength)

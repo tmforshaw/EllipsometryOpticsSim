@@ -69,8 +69,10 @@ def get_expected_intensities_psi_delta(compensator_angles, psi, delta, x_offset 
 def get_guesses_and_bounds():
     # Initial guesses and bounds for parameters
     n_angle_guess,      n_angle_bounds      = get_default_brewsters_angle(), [50 * np.pi/180, 60 * np.pi/180]
-    n_gold_guess,       n_gold_bounds       = 0.18508,                       [0.1, 0.2]
-    k_gold_guess,       k_gold_bounds       = 3.4233,                        [3, 4]
+    # n_gold_guess,       n_gold_bounds       = 0.18508,                       [0.1, 0.2]
+    # k_gold_guess,       k_gold_bounds       = 3.4233,                        [3, 4]
+    n_gold_guess,       n_gold_bounds       = 0.18508,                       [0.18505, 0.18510]
+    k_gold_guess,       k_gold_bounds       = 3.4233,                        [3.4230, 3.4235]
     d_guess,            d_bounds            = 40e-9,                         [10e-9, 150e-9]
     x_offset_guess,     x_offset_bounds     = 0,                             [-np.pi/8, np.pi/8]
     y_offset_guess,     y_offset_bounds     = 0,                             [0, 1]
@@ -126,6 +128,14 @@ def fit_from_data(filenames):
         data = read_file_to_data(filename)
         data_x, data_y = data[0], data[1]
 
+        # Average the data
+
+        w = 10
+        smoothed_y = np.convolve(data_y, np.ones(w), 'valid') / w
+
+        data_y = smoothed_y
+        data_x = data_x[int(w/2):-int(w/2)+1]
+
         # TODO Normalise the data
         data_y = normalise_data(data_y)
 
@@ -160,7 +170,7 @@ def fit_from_data(filenames):
         if i < len(filenames) - 1:
             print()
 
-    plt.legend()
+    # plt.legend()
     plt.tight_layout()
     plt.show()
 
@@ -191,7 +201,7 @@ def plot_from_data(filenames):
 def main():
     print_sample_matrix_type(SAMPLE_MATRIX_FUNCTION)
 
-    # plot_from_data(["data/Gold_Phi_1", "data/Gold_Phi_2_(204)", "data/Gold_Phi_3_(206)", "data/Gold_Phi_4_(208)", "data/Gold_Phi_5_(210)", "data/Gold_Phi_6_(198)", "data/Gold_Phi_7_(196)", "data/Gold_Phi_8_(194)"])
+    plot_from_data(["data/Gold_Phi_1", "data/Gold_Phi_2_(204)", "data/Gold_Phi_3_(206)", "data/Gold_Phi_4_(208)", "data/Gold_Phi_5_(210)", "data/Gold_Phi_6_(198)", "data/Gold_Phi_7_(196)", "data/Gold_Phi_8_(194)", "data/Gold_Phi_192", "data/Gold_Phi_212", "data/Gold_Phi_214"])
 
     # fit_from_data(["data/Gold_Phi_1", "data/Gold_Phi_2_(204)", "data/Gold_Phi_3_(206)", "data/Gold_Phi_4_(208)", "data/Gold_Phi_5_(210)", "data/Gold_Phi_6_(198)", "data/Gold_Phi_7_(196)", "data/Gold_Phi_8_(194)"])
 
@@ -200,7 +210,16 @@ def main():
 
     # fit_from_data(["data/Gold_Ficc_1", "data/Gold_Ficc_2", "data/Gold_Ficc_3"])
 
-    fit_from_data(["data/Gold_52nm_2"])
+    # fit_from_data(["data/Gold_52nm_2"])
+    # fit_from_data(["data/Gold_52nm_1", "data/Gold_52nm_2",  "data/Gold_65nm_1"])
+    # plot_from_data(["data/Gold_52nm_1", "data/Gold_52nm_2",  "data/Gold_65nm_1"])
+
+    # fit_from_data(["data/Gold_65nm_1", "data/Gold_65nm_2",])
+    # fit_from_data(["data/Gold_Phi_194"])
+
+    # fit_from_data(["data/Gold_Phi_192"])
+
+    # fit_from_data(["data/Glass_4"])
 
     # plot_default()
 

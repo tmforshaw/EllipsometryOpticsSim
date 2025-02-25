@@ -128,13 +128,8 @@ def fit_from_data(filenames):
         data = read_file_to_data(filename)
         data_x, data_y = data[0], data[1]
 
-        # Average the data
-
-        w = 10
-        smoothed_y = np.convolve(data_y, np.ones(w), 'valid') / w
-
-        data_y = smoothed_y
-        data_x = data_x[int(w/2):-int(w/2)+1]
+        # Smooth the data
+        data_x, data_y = smooth_data(data_x, data_y)
 
         # TODO Normalise the data
         data_y = normalise_data(data_y)
@@ -181,6 +176,9 @@ def plot_from_data(filenames):
         # Read the data and seperate it into x and y values
         data = read_file_to_data(filename)
         data_x, data_y = data[0], data[1]
+
+        # Smooth the data
+        data_x, data_y = smooth_data(data_x, data_y)
 
         # TODO Normalise the data
         data_y = normalise_data(data_y)

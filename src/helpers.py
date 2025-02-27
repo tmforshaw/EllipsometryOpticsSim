@@ -4,8 +4,8 @@ import matplotlib.pyplot as plt
 # The default values for known parameters
 def get_default_refractive_index_param():
     N_air = get_complex_refractive_index(1, 0)
-    # N_glass = get_complex_refractive_index(1.457, 0)
-    N_glass = get_complex_refractive_index(3.85, -0.02)
+    N_glass = get_complex_refractive_index(1.457, 0)
+    # N_glass = get_complex_refractive_index(3.85, -0.02)
     return (N_air, N_glass)
 
 def get_default_brewsters_angle():

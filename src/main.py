@@ -10,7 +10,7 @@ from helpers import *
 SAMPLE_MATRIX_FUNCTION = 4 
 
 # Whether to fit using only psi and delta, or to use parameters
-FIT_TO_PSI_DELTA = True
+FIT_TO_PSI_DELTA = False
 
 # Calculates the expected intensity of the light, for a range of compensator angles, using the Jones' matrix ray transfer method
 def get_expected_intensities(compensator_angles, sample_angle_of_incidence, n_gold, k_gold, d, x_offset = 0, y_offset = 0):
@@ -35,7 +35,7 @@ def get_expected_intensities(compensator_angles, sample_angle_of_incidence, n_go
 
     # Find the effective reflection and take the absolute value so it's real
     # R_effective = (R_paralell + R_perpendicular) / 2
-    intensities = np.abs(np.sum(final_field_strength, axis=2).reshape(len(final_field_strength)) / 2) + y_offset 
+    intensities = np.abs(np.sum(final_field_strength, axis=2).reshape(len(final_field_strength)) / 2) + y_offset
 
     # intensities = np.sum(np.abs(final_field_strength) ** 2, axis=2).reshape(len(final_field_strength)) + y_offset
 
@@ -56,13 +56,11 @@ def get_expected_intensities_psi_delta(compensator_angles, psi, delta, x_offset 
     analyser_mat = get_rotated_linear_polariser_matrix(np.pi / 4)
 
     # Multiply the Jones' matrices in reverse order to represent the light-ray traversal, then multiply by the field strength vector to apply this combined matrix to it
-    final_field_strength = np.array([analyser_mat @ get_rotated_quarter_wave_plate(compensator_angle) @ sample_mat @ polarisation_mat @ original_field_strength for compensator_angle in compensator_angles])# Use @ instead of * to allow for different sized matrices to be dot-producted together
+    final_field_strength = np.array([analyser_mat @ get_rotated_quarter_wave_plate(compensator_angle - x_offset) @ sample_mat @ polarisation_mat @ original_field_strength for compensator_angle in compensator_angles])# Use @ instead of * to allow for different sized matrices to be dot-producted together
 
     # Find the effective reflection and take the absolute value so it's real
     # R_effective = (R_paralell + R_perpendicular) / 2
     intensities = np.abs(np.sum(final_field_strength, axis=2).reshape(len(final_field_strength)) / 2) + y_offset 
-
-    # intensities = np.sum(np.abs(final_field_strength) ** 2, axis=2).reshape(len(final_field_strength)) + y_offset
 
     intensities /= max(intensities)
 
@@ -70,16 +68,20 @@ def get_expected_intensities_psi_delta(compensator_angles, psi, delta, x_offset 
 
 # Define the initial guesses and bounds for the fitting
 def get_guesses_and_bounds():
-    # Initial guesses and bounds for parameters
-    # n_angle_guess,      n_angle_bounds      = get_default_brewsters_angle(), [50 * np.pi/180, 60 * np.pi/180]
-    # n_gold_guess,       n_gold_bounds       = 0.18508,                       [0.1, 0.2]
-    # k_gold_guess,       k_gold_bounds       = 3.4233,                        [3, 4]
-    # n_angle_guess,      n_angle_bounds      = get_default_brewsters_angle(), [0 * np.pi/180, 180 * np.pi/180]
-    # n_gold_guess,       n_gold_bounds       = 0.18508,                       [0.18505, 0.18510]
-    # k_gold_guess,       k_gold_bounds       = 3.4233,                        [3.4230, 3.4235]
-    n_angle_guess,      n_angle_bounds      = 70 * np.pi/180, [60 * np.pi/180, 80 * np.pi/180]
-    n_gold_guess,       n_gold_bounds       = 1.455,                       [1.3, 1.5]
-    k_gold_guess,       k_gold_bounds       = 0,                        [-0.5, 0.5]
+    # |------------------------ Initial guesses and bounds for parameters ------------------------|
+
+    n_angle_guess,      n_angle_bounds      = np.radians(70),                [np.radians(60), np.radians(80)]
+
+    # # --------------------------- Parameters for Gold and Glass ----------------------------
+    # n_gold_guess,       n_gold_bounds       = 0.18377,                       [0.18360, 0.18380]
+    # k_gold_guess,       k_gold_bounds       = 3.4313,                        [3.4305, 3.4320]
+    # # --------------------------------------------------------------------------------------
+
+    # ---------------------------- Parameters for Silicon Wafer ----------------------------
+    n_gold_guess,       n_gold_bounds       = 1.455,                         [1.4, 1.5]
+    k_gold_guess,       k_gold_bounds       = 0,                             [-0.05, 0.05]
+    # --------------------------------------------------------------------------------------
+
     d_guess,            d_bounds            = 40e-9,                         [10e-9, 150e-9]
     x_offset_guess,     x_offset_bounds     = 0,                             [-np.pi/8, np.pi/8]
     y_offset_guess,     y_offset_bounds     = 0,                             [0, 1]
@@ -164,8 +166,6 @@ def fit_from_data(filenames):
             chi_sqr = np.sum((data_y - expected_y) ** 2 / expected_y)
             print("Goodness of fit: ", chi_sqr)
 
-
-
         # Plot the measured data to the same figure
         # plt.errorbar(data_x * 180 / np.pi, data_y, c='r', alpha=0.2, yerr=sigma, fmt='o', label="Intensity Data")
         plt.scatter(data_x * 180 / np.pi, data_y, c='r', label="Intensity Data{}".format(label_modifier), lw=4)
@@ -227,7 +227,9 @@ def main():
     # fit_from_data(["data/Gold_Ficc_4", "data/Gold_52nm_3", "data/Gold_65nm_3", "data/Gold_C_4"])
 
     # fit_from_data(["data/Glass_4"])
-    fit_from_data(["data/Silicon_1"])
+    fit_from_data(["data/Silicon_2"])
+
+    # fit_from_data(["data/Gold_C_5"])
 
     # plot_default()
 
@@ -247,6 +249,6 @@ def run_multiple_matrix_functions(filenames, function_range = range(4)):
             print()
 
 if __name__ == "__main__":
-    main()
+    # main()
 
-    # run_multiple_matrix_functions(["data/Gold_52nm_3"], [1, 3, 4])
+    run_multiple_matrix_functions(["data/Silicon_2"], [1, 4])

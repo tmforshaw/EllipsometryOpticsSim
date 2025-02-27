@@ -141,13 +141,11 @@ def get_fresnel_thin_film_hardcoded(theta_incoming, N_air, N_gold, N_glass, d, w
 
     A = N_gold ** 2 * np.cos(theta_incoming) * np.cos(theta_refracted)
     A_plus_minus = N_air * N_glass + (N_air * N_glass ** 3 * np.sin(theta_refracted) ** 2 / N_gold ** 2)
-    A_plus = A - A_plus_minus
-    A_minus = A + A_plus_minus
+    A_plus, A_minus = A - A_plus_minus, A + A_plus_minus
 
     B = N_air * N_glass * np.cos(theta_incoming) * np.cos(theta_refracted)
     B_plus_minus = N_glass ** 2 * np.sin(theta_refracted) ** 2 - N_gold ** 2
-    B_plus = B + B_plus_minus
-    B_minus = B - B_plus_minus
+    B_plus, B_minus = B + B_plus_minus, B - B_plus_minus
 
     phase_diff = 2 * np.pi * d / wavelength
 
@@ -160,9 +158,10 @@ def get_fresnel_thin_film_hardcoded(theta_incoming, N_air, N_gold, N_glass, d, w
     ratio = Transmitted_Light[0] / Transmitted_Light[1]
     
     psi = np.atan(np.abs(ratio))
+    # delta = np.pi + np.angle(ratio)
     delta = np.angle(ratio)
 
-    # print(psi * 180/np.pi, delta * 180 / np.pi)
+    # print("Psi: ", psi * 180/np.pi, "\tDelta: ", delta * 180/np.pi)
 
     return get_matrix_from_psi_delta(psi, delta)
 

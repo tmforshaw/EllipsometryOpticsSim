@@ -163,8 +163,11 @@ def get_fresnel_thin_film_hardcoded(theta_incoming, N_air, N_gold, N_glass, d, w
     # psi = np.pi - np.atan(np.abs(ratio))
     # delta = np.pi - np.angle(ratio)
 
-    psi =  np.atan(np.abs(1/ratio))
-    delta = np.pi - np.angle(1/ratio)
+    # psi =  np.atan(np.abs(1/ratio))
+    # delta = np.pi - np.angle(1/ratio)
+
+    psi = np.atan(np.abs(ratio))
+    delta =np.pi +  np.angle(ratio)
 
     print("Psi: ", psi * 180/np.pi, "\tDelta: ", delta * 180/np.pi)
 

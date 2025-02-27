@@ -10,7 +10,7 @@ from helpers import *
 SAMPLE_MATRIX_FUNCTION = 4 
 
 # Whether to fit using only psi and delta, or to use parameters
-FIT_TO_PSI_DELTA = False
+FIT_TO_PSI_DELTA = True
 
 # Calculates the expected intensity of the light, for a range of compensator angles, using the Jones' matrix ray transfer method
 def get_expected_intensities(compensator_angles, sample_angle_of_incidence, n_gold, k_gold, d, x_offset = 0, y_offset = 0):
@@ -35,7 +35,7 @@ def get_expected_intensities(compensator_angles, sample_angle_of_incidence, n_go
 
     # Find the effective reflection and take the absolute value so it's real
     # R_effective = (R_paralell + R_perpendicular) / 2
-    intensities = np.abs(np.sum(final_field_strength, axis=2).reshape(len(final_field_strength)) / 2) + y_offset
+    intensities = np.abs(np.sum(final_field_strength, axis=2).reshape(len(final_field_strength))/ 2) + y_offset
 
     # intensities = np.sum(np.abs(final_field_strength) ** 2, axis=2).reshape(len(final_field_strength)) + y_offset
 
@@ -62,6 +62,8 @@ def get_expected_intensities_psi_delta(compensator_angles, psi, delta, x_offset 
     # R_effective = (R_paralell + R_perpendicular) / 2
     intensities = np.abs(np.sum(final_field_strength, axis=2).reshape(len(final_field_strength)) / 2) + y_offset 
 
+    # intensities = np.sum(np.abs(final_field_strength) ** 2, axis=2).reshape(len(final_field_strength)) + y_offset
+
     intensities /= max(intensities)
 
     return intensities
@@ -84,7 +86,7 @@ def get_guesses_and_bounds():
 
     d_guess,            d_bounds            = 40e-9,                         [10e-9, 150e-9]
     x_offset_guess,     x_offset_bounds     = 0,                             [-np.pi/8, np.pi/8]
-    y_offset_guess,     y_offset_bounds     = 0,                             [0, 1]
+    y_offset_guess,     y_offset_bounds     = 0,                             [-1, 1]
 
     # Combine initial guesses into single array
     initial_guesses = [n_angle_guess, n_gold_guess, k_gold_guess, d_guess, x_offset_guess, y_offset_guess]
@@ -114,11 +116,12 @@ def fit_data_to_expected(compensator_angles, measured_intensities, intensity_unc
 def fit_data_to_expected_psi_delta(compensator_angles, measured_intensities, intensity_uncertainties):
     # Get the initial guesses and bounds for each parameter
     initial_guesses, bounds = get_guesses_and_bounds()
-    
-    bounds = np.array([[0, np.pi], [0, np.pi], [-np.pi/8, np.pi/8], [0, 1]])
+
+    initial_guesses = [np.radians(20), np.radians(45), initial_guesses[-2], initial_guesses[-1]]
+    bounds = np.array([[0, np.pi], [0, np.pi], bounds[-2], bounds[-1]])
 
     # Fit the data using these initial parameters
-    optimal_param, param_convolution = curve_fit(get_expected_intensities_psi_delta, compensator_angles, measured_intensities, p0=[20 * np.pi/180, 45 * np.pi/180,0,0], bounds=(bounds[::, 0], bounds[::, 1]))
+    optimal_param, param_convolution = curve_fit(get_expected_intensities_psi_delta, compensator_angles, measured_intensities, p0=initial_guesses, bounds=(bounds[::, 0], bounds[::, 1]))
 
     # Calculate errors from convolution matrix
     param_err = np.sqrt(np.diag(param_convolution))
@@ -138,7 +141,7 @@ def fit_from_data(filenames):
         data_x, data_y = data[0], data[1]
 
         # Smooth the data
-        data_x, data_y = smooth_data(data_x, data_y, smoothing_width = 3)
+        data_x, data_y = smooth_data(data_x, data_y, smoothing_width = 5)
 
         # TODO Normalise the data
         data_y = normalise_data(data_y)
@@ -157,6 +160,8 @@ def fit_from_data(filenames):
             # Fit the data to the function
             optimal_param, param_err = fit_data_to_expected_psi_delta(data_x, data_y, sigma)
             plt.plot(data_x * 180 / np.pi, get_expected_intensities_psi_delta(data_x, *optimal_param), c='k', ls="-", label="Calculated Result{}".format(label_modifier)) # Plot the light intensity expected for the fitted parameters
+
+            plt.plot(data_x * 180/np.pi, get_expected_intensities_psi_delta(data_x, np.radians(23.745), np.radians(93.308), y_offset=-0.01), lw=4)
         else:
             # Fit the data to the function
             optimal_param, param_err = fit_data_to_expected(data_x, data_y, sigma)
@@ -227,7 +232,7 @@ def main():
     # fit_from_data(["data/Gold_Ficc_4", "data/Gold_52nm_3", "data/Gold_65nm_3", "data/Gold_C_4"])
 
     # fit_from_data(["data/Glass_4"])
-    fit_from_data(["data/Silicon_2"])
+    fit_from_data(["data/Silicon_6"])
 
     # fit_from_data(["data/Gold_C_5"])
 
@@ -249,6 +254,6 @@ def run_multiple_matrix_functions(filenames, function_range = range(4)):
             print()
 
 if __name__ == "__main__":
-    # main()
+    main()
 
-    run_multiple_matrix_functions(["data/Silicon_2"], [1, 4])
+    # run_multiple_matrix_functions(["data/Silicon_2"], [1, 4])

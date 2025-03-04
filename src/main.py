@@ -125,7 +125,7 @@ def fit_from_data(filenames, x_bounds = None):
         # Smooth the data
         data_x, data_y = smooth_data(data_x, data_y, smoothing_width = 5)
 
-        # TODO Normalise the data
+        # Normalise the data
         data_y = normalise_data(data_y)
 
         # Format the figure and plot
@@ -184,7 +184,7 @@ def plot_from_data(filenames, x_bounds = None):
         # Smooth the data
         data_x, data_y = smooth_data(data_x, data_y)
 
-        # TODO Normalise the data
+        # Normalise the data
         data_y = normalise_data(data_y)
 
         # Format the figure and plot

@@ -32,8 +32,9 @@ def get_expected_intensities(compensator_angles, sample_angle_of_incidence, n_go
 
     # Find the effective reflection and take the absolute value so it's real
     # R_effective = (R_paralell + R_perpendicular) / 2
-    intensities = np.abs(np.sum(final_field_strength, axis=2).reshape(len(final_field_strength))/ 2) + y_offset
+    intensities = np.abs(np.sum(final_field_strength, axis=2).reshape(len(final_field_strength)) / 2) + y_offset
 
+    # Normalise the data
     intensities /= max(intensities)
 
     return intensities
@@ -153,6 +154,9 @@ def fit_from_data(filenames, x_bounds = None):
         else:
             intensity_function = get_expected_intensities
 
+        colour = np.random.default_rng().random()
+        print(colour)
+
         # Plot the calculated result using the fitting parameters
         plt.plot(np.degrees(data_x), intensity_function(data_x, *optimal_param), c='k', ls="-", label="Calculated Result{}".format(label_modifier)) # Plot the light intensity expected for the fitted parameters
 
@@ -161,7 +165,7 @@ def fit_from_data(filenames, x_bounds = None):
         print("Goodness of fit: ", chi_sqr)
 
         # Plot the measured data to the same figure
-        # plt.errorbar(data_x * 180 / np.pi, data_y, c='r', alpha=0.2, yerr=sigma, fmt='o', label="Intensity Data")
+        # plt.errorbar(np.degrees(data_x), data_y, c='r', alpha=0.2, yerr=sigma, fmt='o', label="Intensity Data")
         plt.scatter(np.degrees(data_x), data_y, c='r', label="Intensity Data{}".format(label_modifier), lw=4)
         plt.fill_between(np.degrees(data_x), data_y - sigma, data_y + sigma, color="r", alpha=0.2, label="Errors on Intensity Data")
 
@@ -182,7 +186,7 @@ def plot_from_data(filenames, x_bounds = None):
         data_x, data_y = data[0], data[1]
 
         # Smooth the data
-        data_x, data_y = smooth_data(data_x, data_y)
+        data_x, data_y = smooth_data(data_x, data_y, smoothing_width = 5)
 
         # Normalise the data
         data_y = normalise_data(data_y)
@@ -200,7 +204,7 @@ def plot_from_data(filenames, x_bounds = None):
             data_y = data_y[new_data_indices]
 
         # Plot the measured data to the same figure
-        plt.plot(data_x * 180 / np.pi, data_y, label="Intensity Data{}".format(label_modifier), lw=2)
+        plt.plot(np.degrees(data_x), data_y, label="Intensity Data{}".format(label_modifier), lw=2)
 
     plt.legend()
     plt.tight_layout()
@@ -233,16 +237,16 @@ def main():
 
     # fit_from_data(["data/Gold_C_5"])
 
-    # fit_from_data(["data/Gold_69s_1"])
-    fit_from_data(["data/Gold_50s_1"])
+    # plot_from_data(["data/Gold_50s_1", "data/Gold_69s_1", "data/Gold_80s_1", "data/Gold_90s_1", "data/Gold_100s_1", "data/Gold_110s_1"])
+    fit_from_data(["data/Gold_50s_1", "data/Gold_69s_1", "data/Gold_71s_1", "data/Gold_80s_1", "data/Gold_90s_1", "data/Gold_100s_1", "data/Gold_110s_1"])
 
     # plot_default()
 
     # plot_range_of_depths()
     # plot_range_of_brewsters()
 
-def run_multiple_matrix_functions(filenames, function_range = range(4)):
-    for i, matrix_index in enumerate(function_range):
+def run_multiple_matrix_functions(filenames, matrix_function_range = range(4)):
+    for i, matrix_index in enumerate(matrix_function_range):
         # Update global variable to change which sample matrix function is used
         global SAMPLE_MATRIX_FUNCTION
         SAMPLE_MATRIX_FUNCTION = matrix_index
@@ -250,7 +254,7 @@ def run_multiple_matrix_functions(filenames, function_range = range(4)):
         print_sample_matrix_type(matrix_index)
         fit_from_data(filenames)
 
-        if i < len(function_range) - 1:
+        if i < len(matrix_function_range) - 1:
             print()
 
 if __name__ == "__main__":

@@ -12,7 +12,7 @@ def get_default_refractive_index_param():
 def get_default_brewsters_angle():
     # N_air, N_glass = get_default_refractive_index_param()
     # return np.arctan(np.real(N_glass) / np.real(N_air))
-    return 55 * np.pi/180
+    return np.radians(55)
 
 def get_complex_refractive_index(n, k):
     return n + 1j * k
@@ -25,7 +25,7 @@ def read_file_to_data(filename):
         for i, line in enumerate(file):
             line = line.strip().split('\t')
 
-            angles.append(float(line[0]) * np.pi / 180) # Convert degrees to radians
+            angles.append(np.radians(float(line[0]))) # Convert degrees to radians
             intensities.append(float(line[1]))
 
         # Ensure that both arrays of data are the same length
@@ -126,7 +126,7 @@ def print_parameters_nicely(values, errors, names, units, conversions):
 
 #     for wavelength in wavelengths:
 #         x = np.linspace(-np.pi/2, np.pi/2, num=300, endpoint=True)
-#         plt.plot(x * 180 / np.pi, get_expected_intensities(x, param[0], param[1], param[2], param[3], param[4], wavelength), ls="-", label=r"$\lambda = {:.4G}$".format(wavelength))
+#         plt.plot(np.degrees(x), get_expected_intensities(x, param[0], param[1], param[2], param[3], param[4], wavelength), ls="-", label=r"$\lambda = {:.4G}$".format(wavelength))
 
 #     plt.legend()
 #     plt.tight_layout()
@@ -140,7 +140,7 @@ def plot_range_of_depths():
 
     for depth in depths:
         x = np.linspace(0, np.pi * 2, num=300, endpoint=True)
-        plt.plot(x * 180 / np.pi, get_expected_intensities(x, param[0], param[1], param[2], depth), ls="-", lw=3, label="$d = {:.4G}$".format(depth))
+        plt.plot(np.degrees(x), get_expected_intensities(x, param[0], param[1], param[2], depth), ls="-", lw=3, label="$d = {:.4G}$".format(depth))
 
     plt.legend()
     plt.tight_layout()
@@ -149,12 +149,12 @@ def plot_range_of_depths():
 def plot_range_of_brewsters():
     from main import get_expected_intensities, get_guesses_and_bounds
 
-    brewsters = np.linspace(30 * np.pi/180, 60 * np.pi/180, num=15, endpoint=True)
+    brewsters = np.linspace(np.radians(30), np.radians(60), num=15, endpoint=True)
     param, _ = get_guesses_and_bounds()
 
     for brewster in brewsters:
         x = np.linspace(0, np.pi, num=300, endpoint=True)
-        plt.plot(x * 180 / np.pi, get_expected_intensities(x, brewster, param[1], param[2], param[3]), ls="-", lw=3, label=r"$\theta_B = {:.4G}$".format(brewster))
+        plt.plot(np.degrees(x), get_expected_intensities(x, brewster, param[1], param[2], param[3]), ls="-", lw=3, label=r"$\theta_B = {:.4G}$".format(brewster))
 
     plt.legend()
     plt.tight_layout()
@@ -166,7 +166,7 @@ def plot_default():
     param, _ = get_guesses_and_bounds()
 
     x = np.linspace(0, np.pi * 2, num=300, endpoint=True)
-    plt.plot(x * 180 / np.pi, get_expected_intensities(x, *param), ls="-", lw=3, label="Plot")
+    plt.plot(np.degrees(x), get_expected_intensities(x, *param), ls="-", lw=3, label="Plot")
 
     plt.legend()
     plt.tight_layout()

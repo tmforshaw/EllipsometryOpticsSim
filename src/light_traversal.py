@@ -139,15 +139,15 @@ def get_fresnel_thin_film_matrix(theta_incoming, N_air, N_gold, N_glass, d, wave
 def get_fresnel_thin_film_hardcoded(theta_incoming, N_air, N_gold, N_glass, d, wavelength):
     theta_refracted = np.asin((N_air / N_glass) * np.sin(theta_incoming))
 
-    A = N_gold ** 2 * np.cos(theta_incoming) * np.cos(theta_refracted)
-    A_plus_minus = N_air * N_glass + (N_air * N_glass ** 3 * np.sin(theta_refracted) ** 2 / N_gold ** 2)
+    A = (N_gold ** 2) * np.cos(theta_incoming) * np.cos(theta_refracted)
+    A_plus_minus = N_air * N_glass + (N_air * (N_glass ** 3) * (np.sin(theta_refracted) ** 2) / (N_gold ** 2))
     A_plus, A_minus = A - A_plus_minus, A + A_plus_minus
 
     B = N_air * N_glass * np.cos(theta_incoming) * np.cos(theta_refracted)
-    B_plus_minus = N_glass ** 2 * np.sin(theta_refracted) ** 2 - N_gold ** 2
+    B_plus_minus = (N_glass ** 2) * (np.sin(theta_refracted) ** 2) - (N_gold ** 2)
     B_plus, B_minus = B + B_plus_minus, B - B_plus_minus
 
-    phase_diff = 2 * np.pi * d / wavelength
+    phase_diff = 1 * np.pi * d / wavelength
 
     R_parallel = (N_glass * np.cos(theta_incoming) - N_air * np.cos(theta_refracted) + 1j * phase_diff * A_plus) / (N_glass * np.cos(theta_incoming) + N_air * np.cos(theta_refracted) + 1j * phase_diff * A_minus)
     R_perpendicular = (N_air * np.cos(theta_refracted) - N_glass * np.cos(theta_incoming) + 1j * phase_diff * B_plus) / (N_air * np.cos(theta_refracted) + N_glass * np.cos(theta_incoming) + 1j * phase_diff * B_minus)
@@ -166,10 +166,13 @@ def get_fresnel_thin_film_hardcoded(theta_incoming, N_air, N_gold, N_glass, d, w
     # psi =  np.atan(np.abs(1/ratio))
     # delta = np.pi - np.angle(1/ratio)
 
-    psi = np.atan(np.abs(ratio))
-    delta =np.pi +  np.angle(ratio)
+    # psi = np.atan(np.abs(ratio))
+    # delta = np.pi + np.angle(ratio)
 
-    print("Psi: ", psi * 180/np.pi, "\tDelta: ", delta * 180/np.pi)
+    psi = np.atan(np.abs(ratio))
+    delta = np.angle(ratio)
+
+    # print("Psi: ", psi * 180/np.pi, "\tDelta: ", delta * 180/np.pi)
 
     return get_matrix_from_psi_delta(psi, delta)
 

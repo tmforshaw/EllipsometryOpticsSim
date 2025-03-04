@@ -10,7 +10,7 @@ from helpers import *
 SAMPLE_MATRIX_FUNCTION = 4 
 
 # Whether to fit using only psi and delta, or to use parameters
-FIT_TO_PSI_DELTA = True
+FIT_TO_PSI_DELTA = False
 
 # Calculates the expected intensity of the light, for a range of compensator angles, using the Jones' matrix ray transfer method
 def get_expected_intensities(compensator_angles, sample_angle_of_incidence, n_gold, k_gold, d, x_offset = 0, y_offset = 0):
@@ -24,9 +24,6 @@ def get_expected_intensities(compensator_angles, sample_angle_of_incidence, n_go
 
     sample_mat = get_sample_matrix(sample_angle_of_incidence, N_air, N_gold, N_glass, d, 632.8e-9, SAMPLE_MATRIX_FUNCTION)
 
-    # polarisation_mat = get_rotated_linear_polariser_matrix(0)
-    # analyser_mat = get_rotated_linear_polariser_matrix(np.pi / 2)
-
     polarisation_mat = get_rotated_linear_polariser_matrix(-np.pi/4)
     analyser_mat = get_rotated_linear_polariser_matrix(np.pi / 4)
 
@@ -36,8 +33,6 @@ def get_expected_intensities(compensator_angles, sample_angle_of_incidence, n_go
     # Find the effective reflection and take the absolute value so it's real
     # R_effective = (R_paralell + R_perpendicular) / 2
     intensities = np.abs(np.sum(final_field_strength, axis=2).reshape(len(final_field_strength))/ 2) + y_offset
-
-    # intensities = np.sum(np.abs(final_field_strength) ** 2, axis=2).reshape(len(final_field_strength)) + y_offset
 
     intensities /= max(intensities)
 
@@ -49,9 +44,6 @@ def get_expected_intensities_psi_delta(compensator_angles, psi, delta, x_offset 
 
     sample_mat = get_matrix_from_psi_delta(psi, delta)
 
-    # polarisation_mat = get_rotated_linear_polariser_matrix(0)
-    # analyser_mat = get_rotated_linear_polariser_matrix(np.pi / 2)
-
     polarisation_mat = get_rotated_linear_polariser_matrix(-np.pi/4)
     analyser_mat = get_rotated_linear_polariser_matrix(np.pi / 4)
 
@@ -62,8 +54,6 @@ def get_expected_intensities_psi_delta(compensator_angles, psi, delta, x_offset 
     # R_effective = (R_paralell + R_perpendicular) / 2
     intensities = np.abs(np.sum(final_field_strength, axis=2).reshape(len(final_field_strength)) / 2) + y_offset 
 
-    # intensities = np.sum(np.abs(final_field_strength) ** 2, axis=2).reshape(len(final_field_strength)) + y_offset
-
     intensities /= max(intensities)
 
     return intensities
@@ -71,18 +61,18 @@ def get_expected_intensities_psi_delta(compensator_angles, psi, delta, x_offset 
 # Define the initial guesses and bounds for the fitting
 def get_guesses_and_bounds():
     # |------------------------ Initial guesses and bounds for parameters ------------------------|
-
     n_angle_guess,      n_angle_bounds      = np.radians(70),                [np.radians(60), np.radians(80)]
+    # n_angle_guess,      n_angle_bounds      = np.radians(50),                [np.radians(40), np.radians(60)]
 
-    # # --------------------------- Parameters for Gold and Glass ----------------------------
-    # n_gold_guess,       n_gold_bounds       = 0.18377,                       [0.18360, 0.18380]
-    # k_gold_guess,       k_gold_bounds       = 3.4313,                        [3.4305, 3.4320]
-    # # --------------------------------------------------------------------------------------
-
-    # ---------------------------- Parameters for Silicon Wafer ----------------------------
-    n_gold_guess,       n_gold_bounds       = 1.455,                         [1.4, 1.5]
-    k_gold_guess,       k_gold_bounds       = 0,                             [-0.05, 0.05]
+    # --------------------------- Parameters for Gold and Glass ----------------------------
+    n_gold_guess,       n_gold_bounds       = 0.18377,                       [0.18360, 0.18380]
+    k_gold_guess,       k_gold_bounds       = 3.4313,                        [3.4305, 3.4320]
     # --------------------------------------------------------------------------------------
+
+    # # ---------------------------- Parameters for Silicon Wafer ----------------------------
+    # n_gold_guess,       n_gold_bounds       = 1.455,                         [1.2, 1.6]
+    # k_gold_guess,       k_gold_bounds       = 0,                             [-0.05, 0.05]
+    # # --------------------------------------------------------------------------------------
 
     d_guess,            d_bounds            = 40e-9,                         [10e-9, 150e-9]
     x_offset_guess,     x_offset_bounds     = 0,                             [-np.pi/8, np.pi/8]
@@ -101,38 +91,30 @@ def fit_data_to_expected(compensator_angles, measured_intensities, intensity_unc
     # Get the initial guesses and bounds for each parameter
     initial_guesses, bounds = get_guesses_and_bounds()
 
+    function_to_fit = get_expected_intensities
+
+    # Adjust initial guesses and bounds for fitting to psi and delta, along with the function to fit
+    if FIT_TO_PSI_DELTA:
+        initial_guesses = [np.radians(20), np.radians(45), initial_guesses[-2], initial_guesses[-1]]
+        bounds = np.array([[0, np.pi], [0, np.pi], bounds[-2], bounds[-1]])
+        function_to_fit = get_expected_intensities_psi_delta
+
     # Fit the data using these initial parameters
-    optimal_param, param_convolution = curve_fit(get_expected_intensities, compensator_angles, measured_intensities, p0=initial_guesses, bounds=(bounds[::, 0], bounds[::, 1]))
+    optimal_param, param_convolution = curve_fit(function_to_fit , compensator_angles, measured_intensities, p0=initial_guesses, bounds=(bounds[::, 0], bounds[::, 1]))
 
     # Calculate errors from convolution matrix
     param_err = np.sqrt(np.diag(param_convolution))
 
-    # Print out the values, along with their errors
-    print_parameters_nicely(optimal_param, param_err, names=["Angle", "N_gold", "K_gold", "d", "X-Offset", "Y-Offset"], units=["Degrees", "", "", "Metres", "Degrees", ""], conversions = [180/np.pi, 1, 1, 1, 180/np.pi, 1])
-
-    return optimal_param, param_err
-
-# Fits the provided data to the expected intensities, returning the optimal parameters which were found, along with their errors
-def fit_data_to_expected_psi_delta(compensator_angles, measured_intensities, intensity_uncertainties):
-    # Get the initial guesses and bounds for each parameter
-    initial_guesses, bounds = get_guesses_and_bounds()
-
-    initial_guesses = [np.radians(20), np.radians(45), initial_guesses[-2], initial_guesses[-1]]
-    bounds = np.array([[0, np.pi], [0, np.pi], bounds[-2], bounds[-1]])
-
-    # Fit the data using these initial parameters
-    optimal_param, param_convolution = curve_fit(get_expected_intensities_psi_delta, compensator_angles, measured_intensities, p0=initial_guesses, bounds=(bounds[::, 0], bounds[::, 1]))
-
-    # Calculate errors from convolution matrix
-    param_err = np.sqrt(np.diag(param_convolution))
-
-    # Print out the values, along with their errors
-    print_parameters_nicely(optimal_param, param_err, names=["Psi", "Delta", "X-Offset", "Y-Offset"], units=["Degrees", "Degrees", "", ""], conversions=[180/np.pi, 180/np.pi, 1, 1])
+    # Print out the values, along with their errors, depending on if fitting was done using psi and delta or not
+    if FIT_TO_PSI_DELTA:
+        print_parameters_nicely(optimal_param, param_err, names=["Psi", "Delta", "X-Offset", "Y-Offset"], units=["Degrees", "Degrees", "", ""], conversions=[180/np.pi, 180/np.pi, 1, 1])
+    else:
+        print_parameters_nicely(optimal_param, param_err, names=["Angle", "N_gold", "K_gold", "d", "X-Offset", "Y-Offset"], units=["Degrees", "", "", "Metres", "Degrees", ""], conversions = [180/np.pi, 1, 1, 1, 180/np.pi, 1])
 
     return optimal_param, param_err
 
 # Read the data from a file, then plot this data, alongside the expected intensities from the optimal fitting of the data
-def fit_from_data(filenames):
+def fit_from_data(filenames, x_bounds = None):
     for i, filename in enumerate(filenames):
         print("Fitting {}:".format(filename))
     
@@ -152,30 +134,38 @@ def fit_from_data(filenames):
         # A modifier to add the filenamae if there are multiple files
         label_modifier = " {}".format(filename) if len(filenames) > 1 else ""
 
+        # Adjust the bounds of the plot
+        if not (x_bounds is None):
+            new_data_indices = np.argwhere((data_x >= np.radians(x_bounds[0])) & (data_x <= np.radians(x_bounds[1]))).flatten()
+            data_x = data_x[new_data_indices]
+            data_y = data_y[new_data_indices]
+
         # Uncertainty in the y-data
         sigma_percent = 0.02 
         sigma = data_y * sigma_percent
 
+        # Fit the data to the function
+        optimal_param, param_err = fit_data_to_expected(data_x, data_y, sigma)
+
+        # Choose the function to fit depending on FIT_TO_PSI_DELTA variable
         if FIT_TO_PSI_DELTA:
-            # Fit the data to the function
-            optimal_param, param_err = fit_data_to_expected_psi_delta(data_x, data_y, sigma)
-            plt.plot(data_x * 180 / np.pi, get_expected_intensities_psi_delta(data_x, *optimal_param), c='k', ls="-", label="Calculated Result{}".format(label_modifier)) # Plot the light intensity expected for the fitted parameters
-
-            plt.plot(data_x * 180/np.pi, get_expected_intensities_psi_delta(data_x, np.radians(23.745), np.radians(93.308), y_offset=-0.01), lw=4)
+            intensity_function = get_expected_intensities_psi_delta
         else:
-            # Fit the data to the function
-            optimal_param, param_err = fit_data_to_expected(data_x, data_y, sigma)
-            plt.plot(data_x * 180 / np.pi, get_expected_intensities(data_x, *optimal_param), c='k', ls="-", label="Calculated Result{}".format(label_modifier)) # Plot the light intensity expected for the fitted parameters
+            intensity_function = get_expected_intensities
 
-            expected_y = get_expected_intensities(data_x, *optimal_param)
-            chi_sqr = np.sum((data_y - expected_y) ** 2 / expected_y)
-            print("Goodness of fit: ", chi_sqr)
+        # Plot the calculated result using the fitting parameters
+        plt.plot(np.degrees(data_x), intensity_function(data_x, *optimal_param), c='k', ls="-", label="Calculated Result{}".format(label_modifier)) # Plot the light intensity expected for the fitted parameters
+
+        expected_y = intensity_function(data_x, *optimal_param)
+        chi_sqr = np.sum((data_y - expected_y) ** 2 / expected_y)
+        print("Goodness of fit: ", chi_sqr)
 
         # Plot the measured data to the same figure
         # plt.errorbar(data_x * 180 / np.pi, data_y, c='r', alpha=0.2, yerr=sigma, fmt='o', label="Intensity Data")
-        plt.scatter(data_x * 180 / np.pi, data_y, c='r', label="Intensity Data{}".format(label_modifier), lw=4)
-        plt.fill_between(data_x * 180 / np.pi, data_y - sigma, data_y + sigma, color="r", alpha=0.2, label="Errors on Intensity Data")
+        plt.scatter(np.degrees(data_x), data_y, c='r', label="Intensity Data{}".format(label_modifier), lw=4)
+        plt.fill_between(np.degrees(data_x), data_y - sigma, data_y + sigma, color="r", alpha=0.2, label="Errors on Intensity Data")
 
+        # Add spacing between outputs for different files
         if i < len(filenames) - 1:
             print()
 
@@ -183,7 +173,7 @@ def fit_from_data(filenames):
     plt.tight_layout()
     plt.show()
 
-def plot_from_data(filenames):
+def plot_from_data(filenames, x_bounds = None):
     for filename in filenames:
         print("Plotting {}:".format(filename))
     
@@ -203,8 +193,14 @@ def plot_from_data(filenames):
         # A modifier to add the filenamae if there are multiple files
         label_modifier = " {}".format(filename) if len(filenames) > 1 else ""
 
+        # Adjust the bounds of the plot
+        if not (x_bounds is None):
+            new_data_indices = np.argwhere((data_x >= np.radians(x_bounds[0])) & (data_x <= np.radians(x_bounds[1]))).flatten()
+            data_x = data_x[new_data_indices]
+            data_y = data_y[new_data_indices]
+
         # Plot the measured data to the same figure
-        plt.scatter(data_x * 180 / np.pi, data_y, label="Intensity Data{}".format(label_modifier))
+        plt.plot(data_x * 180 / np.pi, data_y, label="Intensity Data{}".format(label_modifier), lw=2)
 
     plt.legend()
     plt.tight_layout()
@@ -214,8 +210,7 @@ def main():
     print_sample_matrix_type(SAMPLE_MATRIX_FUNCTION)
 
     # plot_from_data(["data/Gold_Phi_1", "data/Gold_Phi_2_(204)", "data/Gold_Phi_3_(206)", "data/Gold_Phi_4_(208)", "data/Gold_Phi_5_(210)", "data/Gold_Phi_6_(198)", "data/Gold_Phi_7_(196)", "data/Gold_Phi_8_(194)", "data/Gold_Phi_192", "data/Gold_Phi_212", "data/Gold_Phi_214", "data/Gold_Phi_216"])
-
-    # fit_from_data(["data/Gold_Phi_1", "data/Gold_Phi_2_(204)", "data/Gold_Phi_3_(206)", "data/Gold_Phi_4_(208)", "data/Gold_Phi_5_(210)", "data/Gold_Phi_6_(198)", "data/Gold_Phi_7_(196)", "data/Gold_Phi_8_(194)"])
+    # fit_from_data(["data/Gold_Phi_1", "data/Gold_Phi_2_(204)", "data/Gold_Phi_3_(206)", "data/Gold_Phi_4_(208)", "data/Gold_Phi_5_(210)", "data/Gold_Phi_6_(198)", "data/Gold_Phi_7_(196)", "data/Gold_Phi_8_(194)", "data/Gold_Phi_192", "data/Gold_Phi_212", "data/Gold_Phi_214", "data/Gold_Phi_216"])
 
     # fit_from_data(["data/Gold_C_45_45_3", "data/Gold_I_2"])
     # plot_from_data(["data/Gold_I_1"])
@@ -232,9 +227,14 @@ def main():
     # fit_from_data(["data/Gold_Ficc_4", "data/Gold_52nm_3", "data/Gold_65nm_3", "data/Gold_C_4"])
 
     # fit_from_data(["data/Glass_4"])
-    fit_from_data(["data/Silicon_6"])
+    # fit_from_data(["data/Silicon_5"])
+    # fit_from_data(["data/Gold_65nm_5"])
+    # fit_from_data(["data/Gold_52nm_3"])
 
     # fit_from_data(["data/Gold_C_5"])
+
+    # fit_from_data(["data/Gold_69s_1"])
+    fit_from_data(["data/Gold_50s_1"])
 
     # plot_default()
 
@@ -256,4 +256,4 @@ def run_multiple_matrix_functions(filenames, function_range = range(4)):
 if __name__ == "__main__":
     main()
 
-    # run_multiple_matrix_functions(["data/Silicon_2"], [1, 4])
+    # run_multiple_matrix_functions(["data/Silicon_4"], [1, 4])

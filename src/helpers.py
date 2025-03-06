@@ -90,7 +90,7 @@ def print_sample_matrix_type(type):
     spacing_str = "{:-<8}".format("")
     print(f"{spacing_str}# Using {type_string} Matrix #{spacing_str}")
 
-def print_parameters_nicely(values, errors, names, units, conversions):
+def print_parameters_nicely(values, errors, names, units, conversions, display_filter = None):
     # Get the length of the longest name in the list
     max_name_len = len(max(names, key=len))
 
@@ -109,6 +109,10 @@ def print_parameters_nicely(values, errors, names, units, conversions):
 
     # Print out the (nicely spaced) names, values, errors, and units
     for i in range(len(value_and_errors)):
+        # Skip if the display filter says to
+        if not (display_filter is None) and display_filter[i] == False:
+            continue
+
         # Pad the values, using escaped curly brackets "{{}}" so that the next format still works
         padded_string = "\t{{{{}}}}: {{:<{}}}{{{{}}}}{{:<{}}}[{{{{}}}}]".format(max_name_len - len(names[i]) + 2, max_value_err_len - len(value_err_strings[i]) + 2).format("","")
 

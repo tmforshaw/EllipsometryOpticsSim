@@ -137,7 +137,8 @@ def get_fresnel_thin_film_matrix(theta_incoming, N_air, N_gold, N_glass, d, wave
 
 # Fresnel equations used in "Determination of refractive index and layer thickness of nm-thin films via ellipsometry" by Peter Nestler and Christiane A. Helm
 def get_fresnel_thin_film_hardcoded(theta_incoming, N_air, N_gold, N_glass, d, wavelength):
-    theta_refracted = np.asin((N_air / N_glass) * np.sin(theta_incoming))
+    # TODO Find out whether this needs to be N_glass or N_gold
+    theta_refracted = np.asin((N_air / N_gold) * np.sin(theta_incoming))
 
     A = (N_gold ** 2) * np.cos(theta_incoming) * np.cos(theta_refracted)
     A_plus_minus = N_air * N_glass + (N_air * (N_glass ** 3) * (np.sin(theta_refracted) ** 2) / (N_gold ** 2))
@@ -153,9 +154,8 @@ def get_fresnel_thin_film_hardcoded(theta_incoming, N_air, N_gold, N_glass, d, w
     R_perpendicular = (N_air * np.cos(theta_refracted) - N_glass * np.cos(theta_incoming) + 1j * phase_diff * B_plus) / (N_air * np.cos(theta_refracted) + N_glass * np.cos(theta_incoming) + 1j * phase_diff * B_minus)
 
     R = np.array([R_parallel, R_perpendicular])
-    Transmitted_Light = R
 
-    ratio = Transmitted_Light[0] / Transmitted_Light[1]
+    ratio = R[0] / R[1]
     
     # psi = np.atan(np.abs(1 / ratio))
     # delta = np.angle(1 / ratio)

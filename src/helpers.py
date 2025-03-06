@@ -139,8 +139,15 @@ def print_parameters_nicely(values, errors, names, units, conversions, display_f
 def plot_range_of_depths():
     from main import get_expected_intensities, get_guesses_and_bounds
 
-    depths = np.linspace(30e-9, 80e-9, num=5, endpoint=True)
+    depths = np.linspace(40e-9, 80e-9, num=8, endpoint=True)
     param, _ = get_guesses_and_bounds()
+
+    plt.rc('axes', titlesize=20, labelsize=20)
+    plt.rc('legend', fontsize=15)
+
+    plt.title("Calculated Intensity from Range of Film Depths")
+    plt.xlabel("Compensator Angle [Degrees]")
+    plt.ylabel("Calculated Intensity")
 
     for depth in depths:
         x = np.linspace(0, np.pi * 2, num=300, endpoint=True)

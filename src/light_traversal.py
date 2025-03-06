@@ -148,6 +148,7 @@ def get_fresnel_thin_film_hardcoded(theta_incoming, N_air, N_gold, N_glass, d, w
     B_plus_minus = (N_glass ** 2) * (np.sin(theta_refracted) ** 2) - (N_gold ** 2)
     B_plus, B_minus = B + B_plus_minus, B - B_plus_minus
 
+    # TODO This is a fudge, should be 2
     phase_diff = 1 * np.pi * d / wavelength
 
     R_parallel = (N_glass * np.cos(theta_incoming) - N_air * np.cos(theta_refracted) + 1j * phase_diff * A_plus) / (N_glass * np.cos(theta_incoming) + N_air * np.cos(theta_refracted) + 1j * phase_diff * A_minus)

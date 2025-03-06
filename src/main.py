@@ -110,7 +110,7 @@ def fit_data_to_expected(compensator_angles, measured_intensities, intensity_unc
     if FIT_TO_PSI_DELTA:
         print_parameters_nicely(optimal_param, param_err, names=["Psi", "Delta", "X-Offset", "Y-Offset"], units=["Degrees", "Degrees", "", ""], conversions=[180/np.pi, 180/np.pi, 1, 1])
     else:
-        print_parameters_nicely(optimal_param, param_err, names=["Angle", "N_gold", "K_gold", "d", "X-Offset", "Y-Offset"], units=["Degrees", "", "", "Metres", "Degrees", ""], conversions = [180/np.pi, 1, 1, 1, 180/np.pi, 1], display_filter = [True, False, False, True, False, False])
+        print_parameters_nicely(optimal_param, param_err, names=["Angle", "N_gold", "K_gold", "d", "X-Offset", "Y-Offset"], units=["Degrees", "", "", "Metres", "Degrees", ""], conversions = [180/np.pi, 1, 1, 1, 180/np.pi, 1], display_filter = [False, False, False, True, False, False])
 
     return optimal_param, param_err
 
@@ -157,9 +157,9 @@ def fit_from_data(filenames, x_bounds = None):
         # Plot the calculated result using the fitting parameters
         plt.plot(np.degrees(data_x), intensity_function(data_x, *optimal_param), c='k', ls="-", label="Calculated Result{}".format(label_modifier)) # Plot the light intensity expected for the fitted parameters
 
-        expected_y = intensity_function(data_x, *optimal_param)
-        chi_sqr = np.sum((data_y - expected_y) ** 2 / expected_y)
-        print("\tGoodness of fit: ", chi_sqr)
+        # expected_y = intensity_function(data_x, *optimal_param)
+        # chi_sqr = np.sum((data_y - expected_y) ** 2 / expected_y)
+        # print("\tGoodness of fit: ", chi_sqr)
 
         # Plot the measured data to the same figure
         # plt.errorbar(np.degrees(data_x), data_y, c='r', alpha=0.2, yerr=sigma, fmt='o', label="Intensity Data")
@@ -175,7 +175,7 @@ def fit_from_data(filenames, x_bounds = None):
     plt.show()
 
 def plot_from_data(filenames, x_bounds = None):
-    for filename in filenames:
+    for filename in enumerate(filenames):
         print("Plotting {}:".format(filename))
     
         # Read the data and seperate it into x and y values
@@ -232,9 +232,9 @@ def main():
     # fit_from_data(["data/Gold_C_5"])
 
     # plot_from_data(["data/Gold_50s_1", "data/Gold_69s_1", "data/Gold_80s_1", "data/Gold_90s_1", "data/Gold_100s_1", "data/Gold_110s_1"])
-    fit_from_data(["data/Gold_40s_1", "data/Gold_50s_1", "data/Gold_69s_1", "data/Gold_71s_1", "data/Gold_73s_1", "data/Gold_80s_1", "data/Gold_85s_1", "data/Gold_90s_1", "data/Gold_100s_1", "data/Gold_110s_1"])
+    # fit_from_data(["data/Gold_40s_1", "data/Gold_50sSmile_1", "data/Gold_50s_1", "data/Gold_69s_1", "data/Gold_71s_1", "data/Gold_73s_1", "data/Gold_80s_1", "data/Gold_85s_1", "data/Gold_90s_1", "data/Gold_100s_1", "data/Gold_110s_1"])
 
-    # fit_from_data(["data/Gold_40s_1"])
+    fit_from_data(["data/Gold_40sThin_1"])
 
     # plot_default()
 

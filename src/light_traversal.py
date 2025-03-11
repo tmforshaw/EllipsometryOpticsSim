@@ -64,7 +64,7 @@ def get_snell_thin_film_matrix(theta_incoming, N_air, N_gold, N_glass, d, wavele
     # Delta is the difference between the phase offset given, by this traversal, to the parallel and perpendicular components
     delta = np.abs(N_gold * d * 4 * (np.pi - np.atan2(np.imag(ratio), np.real(ratio))))
 
-    # print("Psi: {:.4G}\tDelta: {:.4G}".format(psi * 180/np.pi, delta* 180/np.pi))
+    # print("Psi: {:.4G}\tDelta: {:.4G}".format(np.degrees(psi), np.degrees(delta)))
 
     return get_matrix_from_psi_delta(psi, delta)
 
@@ -129,7 +129,7 @@ def get_fresnel_thin_film_matrix(theta_incoming, N_air, N_gold, N_glass, d, wave
     # k_gold = np.imag(N_gold)
     # psi = (n_gold * np.cos(theta_incoming) * np.sqrt(1 - (k_gold ** 2 / (n_gold ** 2 + k_gold ** 2)))) / (np.sqrt(n_gold ** 2 + k_gold ** 2) * np.sqrt(1 - (np.sin(theta_incoming) ** 2 / (n_gold ** 2 + k_gold ** 2))))
 
-    # print("Mine:\t Psi: {:.4G}\tDelta: {:.4G}".format(psi * 180/np.pi, delta *180/np.pi))
+    # print("Psi: {:.4G}\tDelta: {:.4G}".format(np.degrees(psi), np.degrees(delta)))
 
 
     #Describe this phase offset and the magnitude in a Jones' matrix
@@ -138,7 +138,7 @@ def get_fresnel_thin_film_matrix(theta_incoming, N_air, N_gold, N_glass, d, wave
 # Fresnel equations used in "Determination of refractive index and layer thickness of nm-thin films via ellipsometry" by Peter Nestler and Christiane A. Helm
 def get_fresnel_thin_film_hardcoded(theta_incoming, N_air, N_gold, N_glass, d, wavelength):
     # TODO Find out whether this needs to be N_glass or N_gold
-    theta_refracted = np.asin((N_air / N_glass) * np.sin(theta_incoming))
+    theta_refracted = np.asin((N_air / N_gold) * np.sin(theta_incoming))
 
     # Account for the different paths by adding phase differences (Utilising complex numbers)
     A = (N_gold ** 2) * np.cos(theta_incoming) * np.cos(theta_refracted)
@@ -160,6 +160,8 @@ def get_fresnel_thin_film_hardcoded(theta_incoming, N_air, N_gold, N_glass, d, w
     ratio = R[0] / R[1]
     psi = np.atan(np.abs(ratio))
     delta = np.angle(ratio)
+
+    # print("Psi: {:.4G}\tDelta: {:.4G}".format(np.degrees(psi), np.degrees(delta)))
 
     return get_matrix_from_psi_delta(psi, delta)
 

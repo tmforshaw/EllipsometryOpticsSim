@@ -33,7 +33,7 @@ def get_expected_intensities(compensator_angles, sample_angle_of_incidence, n_go
     # Find the effective reflection and take the absolute value so it's real
     # R_effective = (R_paralell + R_perpendicular) / 2
     intensities = np.abs(np.sum(final_field_strength, axis=2).flatten() / 2) + y_offset
-    # intensities = np.sum((np.linalg.norm(final_field_strength, axis=2) ** 2), axis=1) + y_offset
+    # intensities = np.sum((np.abs(final_field_strength) ** 2), axis=2).flatten() + y_offset
 
     # Normalise the data
     intensities /= max(intensities)
@@ -159,7 +159,8 @@ def fit_from_data(filenames, x_bounds = None):
         # Fit the data to the function
         optimal_param, param_err = fit_data_to_expected(data_x, data_y, sigma, output)
 
-        combined_output.append(output)
+        if len(filenames) > 1:
+            combined_output.append(output)
 
         # Choose the function to fit depending on FIT_TO_PSI_DELTA variable
         if FIT_TO_PSI_DELTA:
@@ -183,19 +184,17 @@ def fit_from_data(filenames, x_bounds = None):
         if i < len(filenames) - 1:
             print()
 
-    # Print the output parameters
-    import sys
-    np.savetxt(sys.stdout.buffer, np.array(combined_output), fmt='%.4E', delimiter='')
+    # Print the output parameters in a list
+    if len(filenames) > 1:
+        import sys
+        np.savetxt(sys.stdout.buffer, np.array(combined_output), fmt='%.4E', delimiter=',')
 
     # plt.legend()
     plt.tight_layout()
     plt.show()
 
 def plot_from_data(filenames, x_bounds = None):
-    if len(filenames) > 1:
-        output = []
-    
-    for filename in enumerate(filenames):
+    for i, filename in enumerate(filenames):
         print("Plotting {}:".format(filename))
     
         # Read the data and seperate it into x and y values
@@ -245,7 +244,7 @@ def main():
     # fit_from_data(["data/Gold_Ficc_4", "data/Gold_52nm_3", "data/Gold_65nm_3", "data/Gold_C_4"])
 
     # fit_from_data(["data/Glass_4"])
-    # fit_from_data(["data/Silicon_5"])
+    fit_from_data(["data/Silicon_5"])
     # fit_from_data(["data/Gold_65nm_5"])
     # fit_from_data(["data/Gold_52nm_3"])
 
@@ -254,7 +253,7 @@ def main():
     # plot_from_data(["data/Gold_50s_1", "data/Gold_69s_1", "data/Gold_80s_1", "data/Gold_90s_1", "data/Gold_100s_1", "data/Gold_110s_1"])
     # fit_from_data(["data/Gold_40s_1", "data/Gold_50sSmile_1", "data/Gold_50s_1", "data/Gold_69s_1", "data/Gold_71s_1", "data/Gold_73s_1", "data/Gold_80s_1", "data/Gold_85s_1", "data/Gold_90s_1", "data/Gold_100s_1", "data/Gold_110s_1"])
 
-    fit_from_data(["data/Gold_40sThin_2", "data/Gold_50s_2", "data/Gold_50sSmile_2", "data/Gold_65nm_6"])
+    # fit_from_data(["data/Gold_40sThin_2", "data/Gold_50s_2", "data/Gold_50sSmile_2", "data/Gold_80s_2", "data/Gold_85s_2", "data/Gold_90s_2", "data/Gold_100s_2", "data/Gold_110s_2"])
 
     # plot_default()
 

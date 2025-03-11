@@ -12,7 +12,7 @@ def get_default_refractive_index_param():
 def get_default_brewsters_angle():
     # N_air, N_glass = get_default_refractive_index_param()
     # return np.arctan(np.real(N_glass) / np.real(N_air))
-    return np.radians(55)
+    return np.radians(70)
 
 def get_complex_refractive_index(n, k):
     return n + 1j * k
@@ -107,6 +107,9 @@ def print_parameters_nicely(values, errors, names, units, conversions, display_f
     value_err_strings = ["{:.4G} +- {:.4G}".format(value, err) for value, err in value_and_errors]
     max_value_err_len = len(max(value_err_strings, key=len))
 
+    # Keep track of output variables
+    output = []
+
     # Print out the (nicely spaced) names, values, errors, and units
     for i in range(len(value_and_errors)):
         # Skip if the display filter says to
@@ -116,7 +119,12 @@ def print_parameters_nicely(values, errors, names, units, conversions, display_f
         # Pad the values, using escaped curly brackets "{{}}" so that the next format still works
         padded_string = "\t{{{{}}}}: {{:<{}}}{{{{}}}}{{:<{}}}[{{{{}}}}]".format(max_name_len - len(names[i]) + 2, max_value_err_len - len(value_err_strings[i]) + 2).format("","")
 
+        # Add to output variable
+        output.append(value_and_errors[i][0])
+
         print(padded_string.format(names[i], value_err_strings[i], units[i]))
+
+    return output
 
 # -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # Plotting functions to plot default parameters, varying only one -------------------------------------------------------------------------------------------------------------------------------------

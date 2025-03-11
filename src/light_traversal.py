@@ -84,8 +84,8 @@ def fresnel_reflection(theta_incoming, N1, N2, wavelength, d):
     R_parallel = (N1 * np.cos(theta_refracted) - N2 * np.cos(theta_incoming)) / (N1 * np.cos(theta_refracted) + N2 * np.cos(theta_incoming))
     R_perpendicular = (N1 * np.cos(theta_incoming) - N2 * np.cos(theta_refracted)) / (N1 * np.cos(theta_incoming) + N2 * np.cos(theta_refracted))
 
-    R_parallel *= np.exp(-1j * beta)
-    R_perpendicular *= np.exp(-1j * beta)
+    # R_parallel *= np.exp(-1j * beta)
+    # R_perpendicular *= np.exp(-1j * beta)
 
     # R_parallel = -1j * beta
     # R_perpendicular = -1j * beta
@@ -138,8 +138,9 @@ def get_fresnel_thin_film_matrix(theta_incoming, N_air, N_gold, N_glass, d, wave
 # Fresnel equations used in "Determination of refractive index and layer thickness of nm-thin films via ellipsometry" by Peter Nestler and Christiane A. Helm
 def get_fresnel_thin_film_hardcoded(theta_incoming, N_air, N_gold, N_glass, d, wavelength):
     # TODO Find out whether this needs to be N_glass or N_gold
-    theta_refracted = np.asin((N_air / N_gold) * np.sin(theta_incoming))
+    theta_refracted = np.asin((N_air / N_glass) * np.sin(theta_incoming))
 
+    # Account for the different paths by adding phase differences (Utilising complex numbers)
     A = (N_gold ** 2) * np.cos(theta_incoming) * np.cos(theta_refracted)
     A_plus_minus = N_air * N_glass + (N_air * (N_glass ** 3) * (np.sin(theta_refracted) ** 2) / (N_gold ** 2))
     A_plus, A_minus = A - A_plus_minus, A + A_plus_minus
@@ -149,7 +150,7 @@ def get_fresnel_thin_film_hardcoded(theta_incoming, N_air, N_gold, N_glass, d, w
     B_plus, B_minus = B + B_plus_minus, B - B_plus_minus
 
     # TODO This is a fudge, should be 2
-    phase_diff = 1 * np.pi * d / wavelength
+    phase_diff = 2 * np.pi * d / wavelength
 
     R_parallel = (N_glass * np.cos(theta_incoming) - N_air * np.cos(theta_refracted) + 1j * phase_diff * A_plus) / (N_glass * np.cos(theta_incoming) + N_air * np.cos(theta_refracted) + 1j * phase_diff * A_minus)
     R_perpendicular = (N_air * np.cos(theta_refracted) - N_glass * np.cos(theta_incoming) + 1j * phase_diff * B_plus) / (N_air * np.cos(theta_refracted) + N_glass * np.cos(theta_incoming) + 1j * phase_diff * B_minus)
@@ -157,23 +158,8 @@ def get_fresnel_thin_film_hardcoded(theta_incoming, N_air, N_gold, N_glass, d, w
     R = np.array([R_parallel, R_perpendicular])
 
     ratio = R[0] / R[1]
-    
-    # psi = np.atan(np.abs(1 / ratio))
-    # delta = np.angle(1 / ratio)
-
-    # psi = np.pi - np.atan(np.abs(ratio))
-    # delta = np.pi - np.angle(ratio)
-
-    # psi =  np.atan(np.abs(1/ratio))
-    # delta = np.pi - np.angle(1/ratio)
-
-    # psi = np.atan(np.abs(ratio))
-    # delta = np.pi + np.angle(ratio)
-
     psi = np.atan(np.abs(ratio))
     delta = np.angle(ratio)
-
-    # print("Psi: ", psi * 180/np.pi, "\tDelta: ", delta * 180/np.pi)
 
     return get_matrix_from_psi_delta(psi, delta)
 

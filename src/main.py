@@ -32,7 +32,8 @@ def get_expected_intensities(compensator_angles, sample_angle_of_incidence, n_go
 
     # Find the effective reflection and take the absolute value so it's real
     # R_effective = (R_paralell + R_perpendicular) / 2
-    intensities = np.abs(np.sum(final_field_strength, axis=2).reshape(len(final_field_strength)) / 2) + y_offset
+    intensities = np.abs(np.sum(final_field_strength, axis=2).flatten() / 2) + y_offset
+    # intensities = np.sum((np.linalg.norm(final_field_strength, axis=2) ** 2), axis=1) + y_offset
 
     # Normalise the data
     intensities /= max(intensities)
@@ -53,7 +54,7 @@ def get_expected_intensities_psi_delta(compensator_angles, psi, delta, x_offset 
 
     # Find the effective reflection and take the absolute value so it's real
     # R_effective = (R_paralell + R_perpendicular) / 2
-    intensities = np.abs(np.sum(final_field_strength, axis=2).reshape(len(final_field_strength)) / 2) + y_offset 
+    intensities = np.abs(np.sum(final_field_strength, axis=2).flatten() / 2) + y_offset 
 
     intensities /= max(intensities)
 
@@ -88,7 +89,7 @@ def get_guesses_and_bounds():
     return initial_guesses, bounds
 
 # Fits the provided data to the expected intensities, returning the optimal parameters which were found, along with their errors
-def fit_data_to_expected(compensator_angles, measured_intensities, intensity_uncertainties):
+def fit_data_to_expected(compensator_angles, measured_intensities, intensity_uncertainties, output_in = None):
     # Get the initial guesses and bounds for each parameter
     initial_guesses, bounds = get_guesses_and_bounds()
 
@@ -108,14 +109,21 @@ def fit_data_to_expected(compensator_angles, measured_intensities, intensity_unc
 
     # Print out the values, along with their errors, depending on if fitting was done using psi and delta or not
     if FIT_TO_PSI_DELTA:
-        print_parameters_nicely(optimal_param, param_err, names=["Psi", "Delta", "X-Offset", "Y-Offset"], units=["Degrees", "Degrees", "", ""], conversions=[180/np.pi, 180/np.pi, 1, 1])
+        output = print_parameters_nicely(optimal_param, param_err, names=["Psi", "Delta", "X-Offset", "Y-Offset"], units=["Degrees", "Degrees", "", ""], conversions=[180/np.pi, 180/np.pi, 1, 1])
     else:
-        print_parameters_nicely(optimal_param, param_err, names=["Angle", "N_gold", "K_gold", "d", "X-Offset", "Y-Offset"], units=["Degrees", "", "", "Metres", "Degrees", ""], conversions = [180/np.pi, 1, 1, 1, 180/np.pi, 1], display_filter = [False, False, False, True, False, False])
+        output = print_parameters_nicely(optimal_param, param_err, names=["Angle", "N_gold", "K_gold", "d", "X-Offset", "Y-Offset"], units=["Degrees", "", "", "Metres", "Degrees", ""], conversions = [180/np.pi, 1, 1, 1, 180/np.pi, 1], display_filter = [False, False, False, True, False, False])
+
+    # Add parameter output to output_in array
+    if not (output_in is None):
+        output_in.extend(output)
 
     return optimal_param, param_err
 
 # Read the data from a file, then plot this data, alongside the expected intensities from the optimal fitting of the data
 def fit_from_data(filenames, x_bounds = None):
+    if len(filenames) > 1:
+        combined_output = []
+    
     for i, filename in enumerate(filenames):
         print("Fitting {}:".format(filename))
     
@@ -145,8 +153,13 @@ def fit_from_data(filenames, x_bounds = None):
         sigma_percent = 0.02 
         sigma = data_y * sigma_percent
 
+        # Get the output for the data which was fitted
+        output = []
+
         # Fit the data to the function
-        optimal_param, param_err = fit_data_to_expected(data_x, data_y, sigma)
+        optimal_param, param_err = fit_data_to_expected(data_x, data_y, sigma, output)
+
+        combined_output.append(output)
 
         # Choose the function to fit depending on FIT_TO_PSI_DELTA variable
         if FIT_TO_PSI_DELTA:
@@ -157,9 +170,9 @@ def fit_from_data(filenames, x_bounds = None):
         # Plot the calculated result using the fitting parameters
         plt.plot(np.degrees(data_x), intensity_function(data_x, *optimal_param), c='k', ls="-", label="Calculated Result{}".format(label_modifier)) # Plot the light intensity expected for the fitted parameters
 
-        # expected_y = intensity_function(data_x, *optimal_param)
-        # chi_sqr = np.sum((data_y - expected_y) ** 2 / expected_y)
-        # print("\tGoodness of fit: ", chi_sqr)
+        expected_y = intensity_function(data_x, *optimal_param)
+        chi_sqr = np.sum((data_y - expected_y) ** 2 / expected_y)
+        print("\tGoodness of fit: ", chi_sqr)
 
         # Plot the measured data to the same figure
         # plt.errorbar(np.degrees(data_x), data_y, c='r', alpha=0.2, yerr=sigma, fmt='o', label="Intensity Data")
@@ -170,11 +183,18 @@ def fit_from_data(filenames, x_bounds = None):
         if i < len(filenames) - 1:
             print()
 
+    # Print the output parameters
+    import sys
+    np.savetxt(sys.stdout.buffer, np.array(combined_output), fmt='%.4E', delimiter='')
+
     # plt.legend()
     plt.tight_layout()
     plt.show()
 
 def plot_from_data(filenames, x_bounds = None):
+    if len(filenames) > 1:
+        output = []
+    
     for filename in enumerate(filenames):
         print("Plotting {}:".format(filename))
     
@@ -234,7 +254,7 @@ def main():
     # plot_from_data(["data/Gold_50s_1", "data/Gold_69s_1", "data/Gold_80s_1", "data/Gold_90s_1", "data/Gold_100s_1", "data/Gold_110s_1"])
     # fit_from_data(["data/Gold_40s_1", "data/Gold_50sSmile_1", "data/Gold_50s_1", "data/Gold_69s_1", "data/Gold_71s_1", "data/Gold_73s_1", "data/Gold_80s_1", "data/Gold_85s_1", "data/Gold_90s_1", "data/Gold_100s_1", "data/Gold_110s_1"])
 
-    fit_from_data(["data/Gold_40sThin_1"])
+    fit_from_data(["data/Gold_40sThin_2", "data/Gold_50s_2", "data/Gold_50sSmile_2", "data/Gold_65nm_6"])
 
     # plot_default()
 

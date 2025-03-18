@@ -65,11 +65,11 @@ def normalise_data(data_y):
     return data_y / max(data_y)
 
 def smooth_data(data_x, data_y, smoothing_width=5):
-        # Average data using a convolution, this will remove the edges of the data such that there are (w - 1) less entires
-        data_y = np.convolve(data_y, np.ones(smoothing_width), 'valid') / smoothing_width
-        data_x = data_x[int(smoothing_width / 2) : -int(smoothing_width / 2) + (not smoothing_width % 2)]
+    # Average data using a convolution, this will remove the edges of the data such that there are (w - 1) less entires
+    data_y = np.convolve(data_y, np.ones(smoothing_width), 'valid') / smoothing_width
+    data_x = data_x[int(smoothing_width / 2) : -int(smoothing_width / 2) + (not smoothing_width % 2)]
 
-        return data_x, data_y
+    return data_x, data_y
 
 def print_sample_matrix_type(type):
     match type:

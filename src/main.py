@@ -256,7 +256,9 @@ def main():
     # fit_from_data(["data/Gold_40sThin_2", "data/Gold_50s_2", "data/Gold_50sSmile_2", "data/Gold_80s_2", "data/Gold_85s_2", "data/Gold_90s_2", "data/Gold_100s_2", "data/Gold_100s_3", "data/Gold_110s_2"])
 
     # plot_from_data(["data/Gold_100s_218", "data/Gold_100s_220", "data/Gold_100s_224", "data/Gold_100s_226"])
-    fit_from_data(["data/Gold_100s_218", "data/Gold_100s_220", "data/Gold_100s_224", "data/Gold_100s_226"])
+    # fit_from_data(["data/Gold_100s_218", "data/Gold_100s_220", "data/Gold_100s_224", "data/Gold_100s_226"])
+
+    fit_from_data(["data/Gold_40sThin_224_1", "data/Gold_40s_224_1", "data/Gold_50s_224_1", "data/Gold_50sSmile_224_1", "data/Gold_80s_224_1", "data/Gold_90s_224_1", "data/Gold_100s_224", "data/Gold_110s_224_1"])
 
     # plot_default()
 

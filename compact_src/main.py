@@ -6,9 +6,6 @@ from scipy.optimize import curve_fit
 from light_traversal import get_rotated_linear_polariser_matrix, get_rotated_quarter_wave_plate, get_sample_matrix, get_matrix_from_psi_delta
 from helpers import *
 
-# Select the matrix to use for the sample
-SAMPLE_MATRIX_FUNCTION = 4 
-
 # Whether to fit using only psi and delta, or to use parameters
 FIT_TO_PSI_DELTA = False
 
@@ -22,7 +19,7 @@ def get_expected_intensities(compensator_angles, sample_angle_of_incidence, n_go
 
     original_field_strength = np.array([1, 0]) # Parallel Linearly-Polarised Light
 
-    sample_mat = get_sample_matrix(sample_angle_of_incidence, N_air, N_gold, N_glass, d, 632.8e-9, SAMPLE_MATRIX_FUNCTION)
+    sample_mat = get_sample_matrix(sample_angle_of_incidence, N_air, N_gold, N_glass, d, 632.8e-9)
 
     polarisation_mat = get_rotated_linear_polariser_matrix(-np.pi/4)
     analyser_mat = get_rotated_linear_polariser_matrix(np.pi / 4)
@@ -224,9 +221,7 @@ def plot_from_data(filenames, x_bounds = None):
     plt.show()
 
 def main():
-    print_sample_matrix_type(SAMPLE_MATRIX_FUNCTION)
-
-    # plot_from_data(["data/Gold_Phi_192", "data/Gold_Phi_8_(194)", "data/Gold_Phi_7_(196)", "data/Gold_Phi_6_(198)", "data/Gold_Phi_1", "data/Gold_Phi_2_(204)", "data/Gold_Phi_3_(206)", "data/Gold_Phi_4_(208)", "data/Gold_Phi_5_(210)", "data/Gold_Phi_212", "data/Gold_Phi_214", "data/Gold_Phi_216"], x_bounds=[0, 180])
+    plot_from_data(["data/Gold_Phi_192", "data/Gold_Phi_8_(194)", "data/Gold_Phi_7_(196)", "data/Gold_Phi_6_(198)", "data/Gold_Phi_1", "data/Gold_Phi_2_(204)", "data/Gold_Phi_3_(206)", "data/Gold_Phi_4_(208)", "data/Gold_Phi_5_(210)", "data/Gold_Phi_212", "data/Gold_Phi_214", "data/Gold_Phi_216"], x_bounds=[0, 180])
     # fit_from_data(["data/Gold_Phi_1", "data/Gold_Phi_2_(204)", "data/Gold_Phi_3_(206)", "data/Gold_Phi_4_(208)", "data/Gold_Phi_5_(210)", "data/Gold_Phi_6_(198)", "data/Gold_Phi_7_(196)", "data/Gold_Phi_8_(194)", "data/Gold_Phi_192", "data/Gold_Phi_212", "data/Gold_Phi_214", "data/Gold_Phi_216"])
 
     # fit_from_data(["data/Gold_C_45_45_3", "data/Gold_I_2"])
@@ -255,27 +250,10 @@ def main():
 
     # fit_from_data(["data/Gold_40sThin_2", "data/Gold_50s_2", "data/Gold_50sSmile_2", "data/Gold_80s_2", "data/Gold_85s_2", "data/Gold_90s_2", "data/Gold_100s_2", "data/Gold_100s_3", "data/Gold_110s_2"])
 
-    # plot_from_data(["data/Gold_100s_218", "data/Gold_100s_220", "data/Gold_100s_224", "data/Gold_100s_226"])
-    fit_from_data(["data/Gold_100s_218", "data/Gold_100s_220", "data/Gold_100s_224", "data/Gold_100s_226"])
-
     # plot_default()
 
     # plot_range_of_depths()
     # plot_range_of_brewsters()
 
-def run_multiple_matrix_functions(filenames, matrix_function_range = range(4)):
-    for i, matrix_index in enumerate(matrix_function_range):
-        # Update global variable to change which sample matrix function is used
-        global SAMPLE_MATRIX_FUNCTION
-        SAMPLE_MATRIX_FUNCTION = matrix_index
-
-        print_sample_matrix_type(matrix_index)
-        fit_from_data(filenames)
-
-        if i < len(matrix_function_range) - 1:
-            print()
-
 if __name__ == "__main__":
     main()
-
-    # run_multiple_matrix_functions(["data/Silicon_4"], [1, 4])

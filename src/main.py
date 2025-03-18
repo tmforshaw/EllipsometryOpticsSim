@@ -50,7 +50,7 @@ def get_expected_intensities_psi_delta(compensator_angles, psi, delta, x_offset 
     analyser_mat = get_rotated_linear_polariser_matrix(np.pi / 4)
 
     # Multiply the Jones' matrices in reverse order to represent the light-ray traversal, then multiply by the field strength vector to apply this combined matrix to it
-    final_field_strength = np.array([analyser_mat @ get_rotated_quarter_wave_plate(compensator_angle - x_offset) @ sample_mat @ polarisation_mat @ original_field_strength for compensator_angle in compensator_angles])# Use @ instead of * to allow for different sized matrices to be dot-producted together
+    final_field_strength = np.array([analyser_mat @ sample_mat @ get_rotated_quarter_wave_plate(compensator_angle - x_offset) @ polarisation_mat @ original_field_strength for compensator_angle in compensator_angles])# Use @ instead of * to allow for different sized matrices to be dot-producted together
 
     # Find the effective reflection and take the absolute value so it's real
     # R_effective = (R_paralell + R_perpendicular) / 2
@@ -258,7 +258,7 @@ def main():
     # plot_from_data(["data/Gold_100s_218", "data/Gold_100s_220", "data/Gold_100s_224", "data/Gold_100s_226"])
     # fit_from_data(["data/Gold_100s_218", "data/Gold_100s_220", "data/Gold_100s_224", "data/Gold_100s_226"])
 
-    fit_from_data(["data/Gold_40sThin_224_1", "data/Gold_40s_224_1", "data/Gold_50s_224_1", "data/Gold_50sSmile_224_1", "data/Gold_80s_224_1", "data/Gold_90s_224_1", "data/Gold_100s_224", "data/Gold_110s_224_1"])
+    fit_from_data(["data/Gold_40sThin_224_1", "data/Gold_50s_224_1", "data/Gold_50sSmile_224_1", "data/Gold_69s_224_1", "data/Gold_76s_224_1", "data/Gold_77s_224_1", "data/Gold_80s_224_1", "data/Gold_85s_224_1", "data/Gold_90s_224_1", "data/Gold_100s_224", "data/Gold_102s_224_1", "data/Gold_110s_224_1"])
 
     # plot_default()
 

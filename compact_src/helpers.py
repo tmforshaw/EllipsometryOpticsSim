@@ -4,8 +4,7 @@ import matplotlib.pyplot as plt
 def get_default_refractive_index_param():
     N_air = get_complex_refractive_index(1, 0)
     N_glass = get_complex_refractive_index(1.2873, 0.011886) # BK-7 Glass @ 632.8nm
-    # N_glass = get_complex_refractive_index(1.457, 0)
-    # N_glass = get_complex_refractive_index(3.85, -0.02)
+    # N_glass = get_complex_refractive_index(1.457, 0) # Substrate for silicon
     return (N_air, N_glass)
 
 def get_complex_refractive_index(n, k):
@@ -47,7 +46,6 @@ def format_plot(y_max):
     plt.grid(visible = True, axis="x", which = "minor", ls="-.")
 
     # # Remove the margins around the data
-    # plt.margins(x=0, y=y_max / 50, tight=True)
     plt.margins(x=0, tight=True)
 
     # Set the title and axes labels for this plot

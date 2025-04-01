@@ -50,7 +50,7 @@ def get_expected_intensities_psi_delta(compensator_angles, psi, delta, x_offset 
     analyser_mat = get_rotated_linear_polariser_matrix(np.pi / 4)
 
     # Multiply the Jones' matrices in reverse order to represent the light-ray traversal, then multiply by the field strength vector to apply this combined matrix to it
-    final_field_strength = np.array([analyser_mat @ sample_mat @ get_rotated_quarter_wave_plate(compensator_angle - x_offset) @ polarisation_mat @ original_field_strength for compensator_angle in compensator_angles])# Use @ instead of * to allow for different sized matrices to be dot-producted together
+    final_field_strength = np.array([analyser_mat @ get_rotated_quarter_wave_plate(compensator_angle - x_offset) @ sample_mat @ polarisation_mat @ original_field_strength for compensator_angle in compensator_angles])# Use @ instead of * to allow for different sized matrices to be dot-producted together
 
     # Find the effective reflection and take the absolute value so it's real
     # R_effective = (R_paralell + R_perpendicular) / 2
@@ -63,7 +63,7 @@ def get_expected_intensities_psi_delta(compensator_angles, psi, delta, x_offset 
 # Define the initial guesses and bounds for the fitting
 def get_guesses_and_bounds():
     # |------------------------ Initial guesses and bounds for parameters ------------------------|
-    n_angle_guess,      n_angle_bounds      = np.radians(70),                [np.radians(60), np.radians(80)]
+    n_angle_guess,      n_angle_bounds      = np.radians(70),                [np.radians(50), np.radians(90)]
     # n_angle_guess,      n_angle_bounds      = np.radians(50),                [np.radians(40), np.radians(60)]
 
     # --------------------------- Parameters for Gold and Glass ----------------------------
@@ -74,6 +74,11 @@ def get_guesses_and_bounds():
     # # ---------------------------- Parameters for Silicon Wafer ----------------------------
     # n_gold_guess,       n_gold_bounds       = 1.455,                         [1.2, 1.6]
     # k_gold_guess,       k_gold_bounds       = 0,                             [-0.05, 0.05]
+    # # --------------------------------------------------------------------------------------
+
+    # # ------------------------------- Parameters for Silver --------------------------------
+    # n_gold_guess,       n_gold_bounds       = 0.056253,                         [0.05, 0.06]
+    # k_gold_guess,       k_gold_bounds       = 4.2760,                             [4, 4.5]
     # # --------------------------------------------------------------------------------------
 
     d_guess,            d_bounds            = 40e-9,                         [10e-9, 150e-9]
@@ -111,7 +116,8 @@ def fit_data_to_expected(compensator_angles, measured_intensities, intensity_unc
     if FIT_TO_PSI_DELTA:
         output = print_parameters_nicely(optimal_param, param_err, names=["Psi", "Delta", "X-Offset", "Y-Offset"], units=["Degrees", "Degrees", "", ""], conversions=[180/np.pi, 180/np.pi, 1, 1])
     else:
-        output = print_parameters_nicely(optimal_param, param_err, names=["Angle", "N_gold", "K_gold", "d", "X-Offset", "Y-Offset"], units=["Degrees", "", "", "Metres", "Degrees", ""], conversions = [180/np.pi, 1, 1, 1, 180/np.pi, 1], display_filter = [False, False, False, True, False, False])
+        # output = print_parameters_nicely(optimal_param, param_err, names=["Angle", "N_gold", "K_gold", "d", "X-Offset", "Y-Offset"], units=["Degrees", "", "", "Metres", "Degrees", ""], conversions = [180/np.pi, 1, 1, 1, 180/np.pi, 1], display_filter = [False, False, False, True, False, False])
+        output = print_parameters_nicely(optimal_param, param_err, names=["Angle", "N_gold", "K_gold", "d", "X-Offset", "Y-Offset"], units=["Degrees", "", "", "Metres", "Degrees", ""], conversions = [180/np.pi, 1, 1, 1, 180/np.pi, 1])
 
     # Add parameter output to output_in array
     if not (output_in is None):
@@ -218,6 +224,9 @@ def plot_from_data(filenames, x_bounds = None):
 
         # Plot the measured data to the same figure, With a label modifier to add the filenamae if there are multiple files
         plt.plot(np.degrees(data_x), data_y, label="Intensity Data{}".format(" {}".format(filename) if len(filenames) > 1 else ""), lw=4)
+        # plt.plot(np.degrees(data_x), data_y, label="Intensity Data ({})".format("$\\theta = {{}}^\\circ$".format().format((2 * i + 192 if i < 5 else 2 * i + 194) - 0) if len(filenames) > 1 else ""), lw=4)
+        # plt.plot(np.degrees(data_x), data_y, label="Intensity Data ({})".format("$\\theta = {{}}^\\circ$".format().format((2 * i + 218 if i < 2 else 2 * i + 220) - 150) if len(filenames) > 1 else ""), lw=4)
+        # plt.plot(np.degrees(data_x), data_y, label="Intensity Data ({})".format("$\\theta = {{}}^\\circ$".format().format(i + 74) if len(filenames) > 1 else ""), lw=4)
 
     plt.legend()
     plt.tight_layout()
@@ -248,7 +257,7 @@ def main():
     # fit_from_data(["data/Gold_65nm_5"])
     # fit_from_data(["data/Gold_52nm_3"])
 
-    # fit_from_data(["data/Gold_C_5"])
+    fit_from_data(["data/Gold_C_5"])
 
     # plot_from_data(["data/Gold_50s_1", "data/Gold_69s_1", "data/Gold_80s_1", "data/Gold_90s_1", "data/Gold_100s_1", "data/Gold_110s_1"])
     # fit_from_data(["data/Gold_40s_1", "data/Gold_50sSmile_1", "data/Gold_50s_1", "data/Gold_69s_1", "data/Gold_71s_1", "data/Gold_73s_1", "data/Gold_80s_1", "data/Gold_85s_1", "data/Gold_90s_1", "data/Gold_100s_1", "data/Gold_110s_1"])
@@ -258,7 +267,16 @@ def main():
     # plot_from_data(["data/Gold_100s_218", "data/Gold_100s_220", "data/Gold_100s_224", "data/Gold_100s_226"])
     # fit_from_data(["data/Gold_100s_218", "data/Gold_100s_220", "data/Gold_100s_224", "data/Gold_100s_226"])
 
-    fit_from_data(["data/Gold_40sThin_224_1", "data/Gold_50s_224_1", "data/Gold_50sSmile_224_1", "data/Gold_69s_224_1", "data/Gold_76s_224_1", "data/Gold_77s_224_1", "data/Gold_80s_224_1", "data/Gold_85s_224_1", "data/Gold_90s_224_1", "data/Gold_100s_224", "data/Gold_102s_224_1", "data/Gold_110s_224_1"])
+    # fit_from_data(["data/Gold_40sThin_224_1", "data/Gold_50s_224_1", "data/Gold_50sSmile_224_1", "data/Gold_69s_224_1", "data/Gold_76s_224_1", "data/Gold_77s_224_1", "data/Gold_80s_224_1", "data/Gold_85s_224_1", "data/Gold_90s_224_1", "data/Gold_100s_224", "data/Gold_102s_224_1", "data/Gold_110s_224_1"])
+
+    # fit_from_data(["data/Silver_72s_74_1", "data/Silver_72s_76_1", "data/Silver_72s_78_1"])
+    # plot_from_data(["data/Silver_72s_74_1", "data/Silver_72s_75_1", "data/Silver_72s_76_2", "data/Silver_72s_77_1", "data/Silver_72s_78_1"])
+
+    # fit_from_data(["data/Silver_60s_2", "data/Silver_72s_75_3", "data/Silver_80s_2", "data/Silver_90s_2"])
+
+    # plot_from_data(["data/Silver_80s_2", "data/Gold_80s_2"], x_bounds=[0, 180])
+
+    # fit_from_data(["data/Gold_80s_2"])
 
     # plot_default()
 

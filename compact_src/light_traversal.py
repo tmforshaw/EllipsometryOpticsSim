@@ -23,7 +23,6 @@ def get_matrix_from_psi_delta(psi, delta):
 
 # Fresnel equations used in "Determination of refractive index and layer thickness of nm-thin films via ellipsometry" by Peter Nestler and Christiane A. Helm
 def get_fresnel_thin_film_hardcoded(theta_incoming, N_air, N_gold, N_glass, d, wavelength):
-    # TODO Find out whether this needs to be N_glass or N_gold
     theta_refracted = np.asin((N_air / N_glass) * np.sin(theta_incoming))
 
     # Account for the different paths by adding phase differences (Utilising complex numbers)
@@ -47,11 +46,8 @@ def get_fresnel_thin_film_hardcoded(theta_incoming, N_air, N_gold, N_glass, d, w
     psi = np.atan(np.abs(ratio))
     delta = np.angle(ratio)
 
-    # print("Psi: {:.4G}\tDelta: {:.4G}".format(np.degrees(psi), np.degrees(delta)))
-
     return get_matrix_from_psi_delta(psi, delta)
 
 # A helper function which can be used to switch out the sample matrix easily
 def get_sample_matrix(sample_angle_of_incidence, N_air, N_gold, N_glass, d, wavelength):
-    # d = 0
     return get_fresnel_thin_film_hardcoded(sample_angle_of_incidence, N_air, N_gold, N_glass, d, wavelength)

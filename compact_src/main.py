@@ -6,9 +6,6 @@ from scipy.optimize import curve_fit
 from light_traversal import get_rotated_linear_polariser_matrix, get_rotated_quarter_wave_plate, get_sample_matrix, get_matrix_from_psi_delta
 from helpers import *
 
-# Whether to fit using only psi and delta, or to use parameters
-FIT_TO_PSI_DELTA = False
-
 # Calculates the expected intensity of the light, for a range of compensator angles, using the Jones' matrix ray transfer method
 def get_expected_intensities(compensator_angles, sample_angle_of_incidence, n_gold, k_gold, d, x_offset = 0, y_offset = 0):
     # Get the default parameters for this traversal
@@ -30,29 +27,8 @@ def get_expected_intensities(compensator_angles, sample_angle_of_incidence, n_go
     # Find the effective reflection and take the absolute value so it's real
     # R_effective = (R_paralell + R_perpendicular) / 2
     intensities = np.abs(np.sum(final_field_strength, axis=2).flatten() / 2) + y_offset
-    # intensities = np.sum((np.abs(final_field_strength) ** 2), axis=2).flatten() + y_offset
 
     # Normalise the data
-    intensities /= max(intensities)
-
-    return intensities
-
-# Calculates the expected intensity of the light, for a range of compensator angles, using the Jones' matrix ray transfer method
-def get_expected_intensities_psi_delta(compensator_angles, psi, delta, x_offset = 0, y_offset = 0):
-    original_field_strength = np.array([1, 0]) # Parallel Linearly-Polarised Light
-
-    sample_mat = get_matrix_from_psi_delta(psi, delta)
-
-    polarisation_mat = get_rotated_linear_polariser_matrix(-np.pi/4)
-    analyser_mat = get_rotated_linear_polariser_matrix(np.pi / 4)
-
-    # Multiply the Jones' matrices in reverse order to represent the light-ray traversal, then multiply by the field strength vector to apply this combined matrix to it
-    final_field_strength = np.array([analyser_mat @ get_rotated_quarter_wave_plate(compensator_angle - x_offset) @ sample_mat @ polarisation_mat @ original_field_strength for compensator_angle in compensator_angles])# Use @ instead of * to allow for different sized matrices to be dot-producted together
-
-    # Find the effective reflection and take the absolute value so it's real
-    # R_effective = (R_paralell + R_perpendicular) / 2
-    intensities = np.abs(np.sum(final_field_strength, axis=2).flatten() / 2) + y_offset 
-
     intensities /= max(intensities)
 
     return intensities
@@ -92,23 +68,14 @@ def fit_data_to_expected(compensator_angles, measured_intensities, intensity_unc
 
     function_to_fit = get_expected_intensities
 
-    # Adjust initial guesses and bounds for fitting to psi and delta, along with the function to fit
-    if FIT_TO_PSI_DELTA:
-        initial_guesses = [np.radians(20), np.radians(45), initial_guesses[-2], initial_guesses[-1]]
-        bounds = np.array([[0, np.pi], [0, np.pi], bounds[-2], bounds[-1]])
-        function_to_fit = get_expected_intensities_psi_delta
-
     # Fit the data using these initial parameters
     optimal_param, param_convolution = curve_fit(function_to_fit , compensator_angles, measured_intensities, p0=initial_guesses, bounds=(bounds[::, 0], bounds[::, 1]))
 
     # Calculate errors from convolution matrix
     param_err = np.sqrt(np.diag(param_convolution))
 
-    # Print out the values, along with their errors, depending on if fitting was done using psi and delta or not
-    if FIT_TO_PSI_DELTA:
-        output = print_parameters_nicely(optimal_param, param_err, names=["Psi", "Delta", "X-Offset", "Y-Offset"], units=["Degrees", "Degrees", "", ""], conversions=[180/np.pi, 180/np.pi, 1, 1])
-    else:
-        output = print_parameters_nicely(optimal_param, param_err, names=["Angle", "N_gold", "K_gold", "d", "X-Offset", "Y-Offset"], units=["Degrees", "", "", "Metres", "Degrees", ""], conversions = [180/np.pi, 1, 1, 1, 180/np.pi, 1], display_filter = [False, False, False, True, False, False])
+    # Print out the values, along with their errors
+    output = print_parameters_nicely(optimal_param, param_err, names=["Angle", "N_gold", "K_gold", "d", "X-Offset", "Y-Offset"], units=["Degrees", "", "", "Metres", "Degrees", ""], conversions = [180/np.pi, 1, 1, 1, 180/np.pi, 1], display_filter = [False, False, False, True, False, False])
 
     # Add parameter output to output_in array
     if not (output_in is None):
@@ -159,11 +126,7 @@ def fit_from_data(filenames, x_bounds = None):
         if len(filenames) > 1:
             combined_output.append(output)
 
-        # Choose the function to fit depending on FIT_TO_PSI_DELTA variable
-        if FIT_TO_PSI_DELTA:
-            intensity_function = get_expected_intensities_psi_delta
-        else:
-            intensity_function = get_expected_intensities
+        intensity_function = get_expected_intensities
 
         # Plot the calculated result using the fitting parameters
         plt.plot(np.degrees(data_x), intensity_function(data_x, *optimal_param), c='k', ls="-", label="Calculated Result{}".format(label_modifier)) # Plot the light intensity expected for the fitted parameters
@@ -190,70 +153,5 @@ def fit_from_data(filenames, x_bounds = None):
     plt.tight_layout()
     plt.show()
 
-def plot_from_data(filenames, x_bounds = None):
-    for i, filename in enumerate(filenames):
-        print("Plotting {}:".format(filename))
-    
-        # Read the data and seperate it into x and y values
-        data = read_file_to_data(filename)
-        data_x, data_y = data[0], data[1]
-
-        # Smooth the data
-        data_x, data_y = smooth_data(data_x, data_y, smoothing_width = 5)
-
-        # Normalise the data
-        data_y = normalise_data(data_y)
-
-        # Format the figure and plot
-        format_plot(max(data_y))
-
-        # Adjust the bounds of the plot
-        if not (x_bounds is None):
-            new_data_indices = np.argwhere((data_x >= np.radians(x_bounds[0])) & (data_x <= np.radians(x_bounds[1]))).flatten()
-            data_x = data_x[new_data_indices]
-            data_y = data_y[new_data_indices]
-
-        # Plot the measured data to the same figure, With a label modifier to add the filenamae if there are multiple files
-        plt.plot(np.degrees(data_x), data_y, label="Intensity Data{}".format(" {}".format(filename) if len(filenames) > 1 else ""), lw=4)
-
-    plt.legend()
-    plt.tight_layout()
-    plt.show()
-
-def main():
-    plot_from_data(["data/Gold_Phi_192", "data/Gold_Phi_8_(194)", "data/Gold_Phi_7_(196)", "data/Gold_Phi_6_(198)", "data/Gold_Phi_1", "data/Gold_Phi_2_(204)", "data/Gold_Phi_3_(206)", "data/Gold_Phi_4_(208)", "data/Gold_Phi_5_(210)", "data/Gold_Phi_212", "data/Gold_Phi_214", "data/Gold_Phi_216"], x_bounds=[0, 180])
-    # fit_from_data(["data/Gold_Phi_1", "data/Gold_Phi_2_(204)", "data/Gold_Phi_3_(206)", "data/Gold_Phi_4_(208)", "data/Gold_Phi_5_(210)", "data/Gold_Phi_6_(198)", "data/Gold_Phi_7_(196)", "data/Gold_Phi_8_(194)", "data/Gold_Phi_192", "data/Gold_Phi_212", "data/Gold_Phi_214", "data/Gold_Phi_216"])
-
-    # fit_from_data(["data/Gold_C_45_45_3", "data/Gold_I_2"])
-    # plot_from_data(["data/Gold_I_1"])
-
-    # fit_from_data(["data/Gold_Ficc_1", "data/Gold_Ficc_2", "data/Gold_Ficc_3"])
-
-    # fit_from_data(["data/Gold_52nm_2"])
-    # fit_from_data(["data/Gold_52nm_1", "data/Gold_52nm_2",  "data/Gold_52nm_3"])
-    # plot_from_data(["data/Gold_52nm_1", "data/Gold_52nm_2",  "data/Gold_65nm_1"])
-
-    # fit_from_data(["data/Gold_52nm_3", "data/Gold_65nm_3"])
-    # fit_from_data(["data/Gold_Ficc_4"])
-    # fit_from_data(["data/Gold_Ficc_4", "data/Gold_52nm_3", "data/Gold_65nm_3"])
-    # fit_from_data(["data/Gold_Ficc_4", "data/Gold_52nm_3", "data/Gold_65nm_3", "data/Gold_C_4"])
-
-    # fit_from_data(["data/Glass_4"])
-    # fit_from_data(["data/Silicon_5"])
-    # fit_from_data(["data/Gold_65nm_5"])
-    # fit_from_data(["data/Gold_52nm_3"])
-
-    # fit_from_data(["data/Gold_C_5"])
-
-    # plot_from_data(["data/Gold_50s_1", "data/Gold_69s_1", "data/Gold_80s_1", "data/Gold_90s_1", "data/Gold_100s_1", "data/Gold_110s_1"])
-    # fit_from_data(["data/Gold_40s_1", "data/Gold_50sSmile_1", "data/Gold_50s_1", "data/Gold_69s_1", "data/Gold_71s_1", "data/Gold_73s_1", "data/Gold_80s_1", "data/Gold_85s_1", "data/Gold_90s_1", "data/Gold_100s_1", "data/Gold_110s_1"])
-
-    # fit_from_data(["data/Gold_40sThin_2", "data/Gold_50s_2", "data/Gold_50sSmile_2", "data/Gold_80s_2", "data/Gold_85s_2", "data/Gold_90s_2", "data/Gold_100s_2", "data/Gold_100s_3", "data/Gold_110s_2"])
-
-    # plot_default()
-
-    # plot_range_of_depths()
-    # plot_range_of_brewsters()
-
 if __name__ == "__main__":
-    main()
+    fit_from_data(["data/Gold_C_5"])

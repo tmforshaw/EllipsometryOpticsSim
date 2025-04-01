@@ -5,8 +5,7 @@ import matplotlib.pyplot as plt
 def get_default_refractive_index_param():
     N_air = get_complex_refractive_index(1, 0)
     N_glass = get_complex_refractive_index(1.2873, 0.011886) # BK-7 Glass @ 632.8nm
-    # N_glass = get_complex_refractive_index(1.457, 0)
-    # N_glass = get_complex_refractive_index(3.85, -0.02)
+    # N_glass = get_complex_refractive_index(3.85, -0.02) # Silicon Substrate
     return (N_air, N_glass)
 
 def get_default_brewsters_angle():
@@ -35,12 +34,12 @@ def read_file_to_data(filename):
 
 def format_plot(y_max):
     # Set the font size for the title and axes labels
-    plt.rc('axes', titlesize=20, labelsize=20)
-    plt.rc('legend', fontsize=15)
+    plt.rc('axes', titlesize=22, labelsize=22)
+    plt.rc('legend', fontsize=18)
 
     # Set the minor and major tick labels to different sizes
-    plt.tick_params(axis='both', which='minor', labelsize=10)
-    plt.tick_params(axis='both', which='major', labelsize=15)
+    plt.tick_params(axis='both', which='minor', labelsize=16)
+    plt.tick_params(axis='both', which='major', labelsize=22)
 
     # Set the grid to be visible for multiples of 15 degrees and 45 degrees
     ax = plt.gca()
